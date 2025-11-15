@@ -1,0 +1,54 @@
+:host{
+  width:100%;
+  height:100%;
+  container-type: inline-size;
+  position:relative;
+}
+
+.widget-container{
+  width: 100%;
+  flex:1;
+  box-sizing: border-box;
+  padding:5%;
+  background-color: white;
+  display:flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  overflow:auto
+}
+
+.action-text{
+  font-family: 'Roboto', "Helvetica Neue", sans-serif;
+  overflow:hidden
+}
+
+
+.action-button{
+  padding:30px;
+  border:black solid 2px;
+  margin-bottom: 10px;
+  border-radius: 3px;
+}
+
+@container (min-width: 200px) {
+  .action-text{
+    font-size: 4cqw;
+  }
+
+  .action-button{
+    padding:5cqw
+  }
+
+}
+
+@container (max-width: 199px) {
+  .action-text{
+    font-size: 4cqw;
+  }
+
+  .action-button{
+    padding:5cqw
+  }
+
+}

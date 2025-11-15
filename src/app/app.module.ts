@@ -45,6 +45,7 @@ import { ServicesManagerComponent } from './plugins/services-manager/services-ma
 import { DashboardFullDialogComponent } from './dashboard-full-dialog/dashboard-full-dialog.component';
 import { PopoverDirective } from './common/popover/popover.directive';
 import { LlmChatboxComponent } from './plugins/llm-chatbox/llm-chatbox.component';
+import { FrancolinoComponent } from './plugins/francolino/francolino.component';
 
 @NgModule({
   declarations: [
@@ -74,6 +75,7 @@ import { LlmChatboxComponent } from './plugins/llm-chatbox/llm-chatbox.component
     DashboardFullDialogComponent,
     PopoverDirective,
     LlmChatboxComponent,
+    FrancolinoComponent
   ],
   imports: [
     BrowserModule,

@@ -1,0 +1,36 @@
+<ng-container *ngIf="!isLoading;else elseBlock">
+  <div style="width:100%;height:100%;display:flex;flex-direction: column;padding:5px;box-sizing: border-box">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline" style="width:100%;background-color: white">
+      <input matInput [(ngModel)]="search" placeholder="Search action...">
+      <span matSuffix><mat-icon style="margin-right:10px">search</mat-icon></span>
+    </mat-form-field>
+    <div class="widget-container">
+      <div *ngIf="actions.length !== 0; else emptyActionsBlock"
+           style="display:flex;flex-direction: column;align-items: flex-start;justify-content: center;">
+        <ng-container *ngFor="let action of filteredActions">
+          <button mat-button class="action-button" (click)="onActionClick(action)"
+                  [style.background-color]="nodeColors[action.actionState]"
+                  [style.opacity]="action.actionState == ActionState.INACTIVE ? 0.5 : 1"
+                  [disabled]="action.actionState !== ActionState.ACTIVE">
+            <p class="action-text">{{action.actionID}}</p>
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template #elseBlock>
+  <div style="display:flex;height:100%;width:100%;align-items: center;justify-content: center">
+    <mat-spinner/>
+  </div>
+</ng-template>
+
+<ng-template #emptyActionsBlock>
+  <div style="display:flex;height:100%;width:100%;align-items: center;justify-content: center;">
+    There are no action for this application.
+  </div>
+</ng-template>
+
+<app-widget-error-dialog [style.display]="showErrorDialog ? 'block' : 'none'" [messageError]="errorMessage"
+                         (buttonClick)="closeErrorDialog()"/>
