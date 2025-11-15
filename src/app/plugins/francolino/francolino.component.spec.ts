@@ -1,23 +1,16 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { TestBed } from '@angular/core/testing';
 import { FrancolinoComponent } from './francolino.component';
 
 describe('FrancolinoComponent', () => {
-  let component: FrancolinoComponent;
-  let fixture: ComponentFixture<FrancolinoComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      declarations: [FrancolinoComponent]
-    })
-    .compileComponents();
-    
-    fixture = TestBed.createComponent(FrancolinoComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [FrancolinoComponent]
+    });
   });
 
   it('should create', () => {
+    const fixture = TestBed.createComponent(FrancolinoComponent);
+    const component = fixture.componentInstance;
     expect(component).toBeTruthy();
   });
 });

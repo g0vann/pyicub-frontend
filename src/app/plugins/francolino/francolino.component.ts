@@ -1,160 +1,36 @@
-import {Component, OnInit} from '@angular/core';
-import {WidgetBaseComponent} from '../../widget-base/widget-base.component';
+import { Component } from '@angular/core';
+import { WidgetBaseComponent } from '../../widget-base/widget-base.component';
+
+// Angular Core
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+// Angular Material (devono essere importati anche qui)
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Il componente root della tua app interna
+import { Shell } from './components/shell/shell';
 
 @Component({
   selector: 'app-francolino',
   templateUrl: './francolino.component.html',
-  styleUrl: './francolino.component.css'
+  styleUrls: ['./francolino.component.css'],
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    // Material
+    MatToolbarModule,
+    MatIconModule,
+    MatListModule,
+    MatButtonModule,
+    MatTooltipModule,
+    // La tua app
+    Shell
+  ]
 })
-export class FrancolinoComponent extends WidgetBaseComponent implements OnInit {
-
-  actions: Action[] = []
-  isLoading = true;
-  search: string
-
-  showErrorDialog: boolean = false;
-  errorMessage: string;
-
-  nodeColors = {
-    INACTIVE: 'white',
-    ACTIVE: 'white',
-    RUNNING: 'greenyellow',
-    FAILED: 'red',
-    DONE: 'green',
-    TIMEOUT: 'yellow'
-  }
-
-  get filteredActions(): Action[] {
-
-    if (!this.search) {
-      return this.actions
-    } else {
-      return this.actions.filter(action => action.actionID.toLowerCase().includes(this.search.toLowerCase()))
-    }
-
-  }
-
-  ngOnInit() {
-    this.getRobotActions().subscribe({
-        next: actions => {
-          const filteredActions = actions.filter(action => action.startsWith(this.application.name + ".")).map(action => action.substring(this.application.name.length + 1))
-          const newActions: Action[] = filteredActions.map(action => {
-            return {actionID: action, actionState: ActionState.ACTIVE}
-          })
-          this.actions = newActions.sort((a, b) => {
-              const nameA = a.actionID.toUpperCase();
-              const nameB = b.actionID.toUpperCase();
-              if (nameA < nameB) {
-                return -1;
-              }
-              if (nameA > nameB) {
-                return 1;
-              }
-
-              // sono uguali
-              return 0;
-          });
-
-          this.isLoading = false;
-          //console.log(this.actions)
-        },
-        error: err => {
-          console.log(err)
-          this.isLoading = false;
-          this.openErrorDialog("Impossibile caricare le azioni del robot.")
-        }
-      }
-    )
-  }
-
-  onActionClick(selectedAction: Action) {
-
-    if (selectedAction.actionState === ActionState.ACTIVE) {
-
-      this.actions.forEach(action => {
-        if (selectedAction.actionID !== action.actionID) {
-          this.updateActionState(action, ActionState.INACTIVE)
-        }
-      })
-
-      this.playActionAsync(`${this.application.name}.${selectedAction.actionID}`).subscribe(reqID => {
-        console.log(selectedAction.actionID)
-
-        console.log("RISPOSTA PLAYACTION: ",reqID)
-
-        const onRunning = () => {
-          this.updateActionState(selectedAction, ActionState.RUNNING)
-        }
-
-        const onDone = () => {
-
-          this.updateActionState(selectedAction, ActionState.DONE)
-          setTimeout(() => {
-            this.actions.forEach(action => {
-              this.updateActionState(action, ActionState.ACTIVE)
-            })
-          }, 2000)
-
-        }
-
-        const onFailed = () => {
-
-          this.updateActionState(selectedAction, ActionState.FAILED)
-          setTimeout(() => {
-            this.actions.forEach(action => {
-              this.updateActionState(action, ActionState.ACTIVE)
-            })
-          }, 2000)
-        }
-
-        const onTimeout = () => {
-
-          this.updateActionState(selectedAction, ActionState.TIMEOUT)
-          setTimeout(() => {
-            this.actions.forEach(action => {
-              this.updateActionState(action, ActionState.ACTIVE)
-            })
-          }, 2000)
-        }
-
-        this.checkAsyncRequestStatus(reqID, undefined, onRunning, onDone, onFailed,onTimeout)
-
-      })
-    }
-  }
-
-  private updateActionState(actionToUpdate: Action, updatedState: ActionState) {
-    this.actions = this.actions.map(action => {
-      if (action.actionID === actionToUpdate.actionID) {
-        return {actionID: action.actionID, actionState: updatedState}
-      }
-      return action
-    })
-  }
-
-  openErrorDialog(errorMessage: string) {
-    this.errorMessage = errorMessage;
-    this.showErrorDialog = true;
-  }
-
-  closeErrorDialog() {
-    this.errorMessage = "";
-    this.showErrorDialog = false;
-  }
-
-  protected readonly ActionState = ActionState;
-}
-
-interface Action {
-  actionID: string
-  actionState: ActionState
-}
-
-enum ActionState {
-  ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
-  RUNNING = "RUNNING",
-  DONE = "DONE",
-  FAILED = "FAILED",
-  TIMEOUT = "TIMEOUT"
-}
+export class FrancolinoComponent extends WidgetBaseComponent {}
