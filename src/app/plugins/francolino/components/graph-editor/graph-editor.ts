@@ -47,7 +47,6 @@ import cytoscape, { NodeSingular } from 'cytoscape';
     :host {
       display: flex;
       flex: 1 1 auto;
-      height: 100%;
       min-height: 0;
     }
 

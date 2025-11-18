@@ -253,6 +253,7 @@ import { GraphEditor }      from '../graph-editor/graph-editor';
       gap: 16px;
       height: 100%;
       min-height: 0;
+      width: 100%; //Questo era il problema che non faceva espandere la grid al 100% dello spazio d
     }
 
     .panel {
