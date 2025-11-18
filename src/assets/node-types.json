@@ -1,0 +1,26 @@
+[
+  {
+    "id": "node-1",
+    "name": "Start",
+    "icon": "ellipse",
+    "defaultColor": "#4CAF50"
+  },
+  {
+    "id": "node-2",
+    "name": "Step",
+    "icon": "rectangle",
+    "defaultColor": "#2196F3"
+  },
+  {
+    "id": "node-3",
+    "name": "Decision",
+    "icon": "diamond",
+    "defaultColor": "#FFC107"
+  },
+  {
+    "id": "node-4",
+    "name": "End",
+    "icon": "ellipse",
+    "defaultColor": "#F44336"
+  }
+]

@@ -20,48 +20,33 @@ body {
    FIX UFFICIALE PER GRIDSTER FULL-HEIGHT
    ====================================================================== */
 
-/* 1. Il contenitore principale di Gridster deve avere il 100% in altezza */
-.gridster {
-    height: 100% !important;
-    min-height: 0 !important;
-}
-
-/* 2. Ogni widget deve poter usare tutta l'altezza */
+/* 1. Rendi il contenitore del widget un flex-container */
 gridster-item,
-.gridster-item,
-.gridster-item-content {
-    height: 100% !important;
-    min-height: 0 !important;
-}
-
-/* 3. Il contenuto interno deve essere flex, altrimenti mat-card non cresce */
-.gridster-item-content {
+.gridster-item {
     display: flex !important;
     flex-direction: column !important;
 }
 
-/* 4. Il mat-card deve essere full-height */
+/* 2. Lascia che il contenuto (mat-card) si espanda per riempire lo spazio */
+.gridster-item-content,
 .gridster-item-content mat-card {
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important; /* Essenziale per la compressione in flexbox */
     display: flex !important;
     flex-direction: column !important;
-    min-height: 0 !important;
 }
 
-/* 5. I componenti dentro mat-card devono espandersi */
+/* 3. Assicura che i componenti all'interno del mat-card si espandano */
 .gridster-item-content mat-card > * {
     flex: 1 1 auto !important;
     min-height: 0 !important;
 }
 
-/* 6. Il plugin Francolino deve diventare un contenitore flessibile */
+/* 4. Il plugin Francolino e il suo shell devono essere contenitori flessibili */
 app-francolino,
 app-shell {
     display: flex !important;
     flex-direction: column !important;
-    height: 100% !important;
-    flex: 1 1 auto !important;
+    height: 100% !important; /* Occupa tutta l'altezza del genitore (mat-card) */
     min-height: 0 !important;
 }

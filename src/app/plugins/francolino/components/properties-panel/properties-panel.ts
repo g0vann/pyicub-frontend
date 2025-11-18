@@ -29,51 +29,8 @@ import { debounceTime, Subject, Subscription } from 'rxjs';
     MatFormFieldModule,
     MatInputModule
   ],
-  template: `
-    <div *ngIf="node; else emptyState" class="properties">
-      <mat-accordion multi>
-        <mat-expansion-panel [expanded]="true">
-          <mat-expansion-panel-header>
-            <mat-panel-title>Properties</mat-panel-title>
-          </mat-expansion-panel-header>
-          <div class="property-list">
-            <mat-form-field appearance="outline">
-              <mat-label>Colore</mat-label>
-              <input matInput type="color" [ngModel]="node.color" (ngModelChange)="onPropertyChange({ color: $event })" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Attribute 1</mat-label>
-              <input matInput [ngModel]="node.attribute1" (ngModelChange)="onPropertyChange({ attribute1: $event })" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Attribute 2</mat-label>
-              <input matInput [ngModel]="node.attribute2" (ngModelChange)="onPropertyChange({ attribute2: $event })" />
-            </mat-form-field>
-          </div>
-        </mat-expansion-panel>
-        <mat-expansion-panel [expanded]="true">
-          <mat-expansion-panel-header>
-            <mat-panel-title>Label</mat-panel-title>
-          </mat-expansion-panel-header>
-          <div class="property-list">
-            <mat-form-field appearance="outline">
-              <mat-label>Label</mat-label>
-              <textarea matInput [ngModel]="node.label" (ngModelChange)="onPropertyChange({ label: $event })"></textarea>
-            </mat-form-field>
-          </div>
-        </mat-expansion-panel>
-      </mat-accordion>
-    </div>
-
-    <ng-template #emptyState>
-      <p>Nessun nodo selezionato.</p>
-    </ng-template>
-  `,
-  styles: [`
-    .properties { height: 100%; }
-    .property-list { display: flex; flex-direction: column; gap: 16px; padding: 8px 0; }
-    mat-form-field { width: 100%; }
-  `]
+  templateUrl: './properties-panel.html',
+  styleUrls: ['properties-panel.scss']
 })
 export class PropertiesPanel {
   @Input() node: GraphNode | undefined;

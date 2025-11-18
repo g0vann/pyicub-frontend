@@ -1,1 +1,42 @@
-<p>properties-panel works!</p>
+<div *ngIf="node; else emptyState" class="properties">
+    <mat-accordion multi>
+        <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+                <mat-panel-title>Properties</mat-panel-title>
+            </mat-expansion-panel-header>
+            <div class="property-list">
+                <mat-form-field appearance="outline">
+                    <mat-label>Colore</mat-label>
+                    <input matInput type="color" [ngModel]="node.color"
+                        (ngModelChange)="onPropertyChange({ color: $event })" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                    <mat-label>Attribute 1</mat-label>
+                    <input matInput [ngModel]="node.attribute1"
+                        (ngModelChange)="onPropertyChange({ attribute1: $event })" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                    <mat-label>Attribute 2</mat-label>
+                    <input matInput [ngModel]="node.attribute2"
+                        (ngModelChange)="onPropertyChange({ attribute2: $event })" />
+                </mat-form-field>
+            </div>
+        </mat-expansion-panel>
+        <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+                <mat-panel-title>Label</mat-panel-title>
+            </mat-expansion-panel-header>
+            <div class="property-list">
+                <mat-form-field appearance="outline">
+                    <mat-label>Label</mat-label>
+                    <textarea matInput [ngModel]="node.label"
+                        (ngModelChange)="onPropertyChange({ label: $event })"></textarea>
+                </mat-form-field>
+            </div>
+        </mat-expansion-panel>
+    </mat-accordion>
+</div>
+
+<ng-template #emptyState>
+    <p>Nessun nodo selezionato.</p>
+</ng-template>

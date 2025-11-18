@@ -24,79 +24,8 @@ import cytoscape, { NodeSingular } from 'cytoscape';
   selector: 'app-graph-editor',
   standalone: true,
   imports: [CommonModule, MatButtonModule, MatIconModule],
-  template: `
-    <div class="graph-container">
-      <div class="cy-container" #cyContainer></div>
-      <div class="zoom-controls">
-        <button mat-fab color="primary" (click)="zoomIn()">
-          <mat-icon>zoom_in</mat-icon>
-        </button>
-        <button mat-fab color="primary" (click)="zoomOut()">
-          <mat-icon>zoom_out</mat-icon>
-        </button>
-        <button mat-fab color="primary" (click)="fit()">
-          <mat-icon>fullscreen</mat-icon>
-        </button>
-      </div>
-      <div class="tooltip" *ngIf="(graphState.currentEdgeType | async)">
-        Per disegnare un arco clicca sul nodo di partenza e poi seleziona il nodo di destinazione
-      </div>
-    </div>
-  `,
-  styles: [`
-    :host {
-      display: flex;
-      flex: 1 1 auto;
-      min-height: 0;
-    }
-
-    .graph-container {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 auto;
-      width: 100%;
-      height: 100%;
-      min-height: 0 !important;
-      position: relative;
-      overflow: hidden; /* importantissimo */
-    }
-
-    .cy-container {
-      flex: 1 1 auto;
-      min-height: 0 !important;
-      width: 100%;
-      height: 100%;
-      overflow: hidden !important;
-      position: relative;
-      background-image:
-        linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
-      background-size: 20px 20px;
-    }
-
-    .zoom-controls {
-      position: absolute;
-      bottom: 16px;
-      right: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      pointer-events: auto;
-    }
-
-    .tooltip {
-      position: absolute;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(0,0,0,0.6);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 16px;
-      font-size: 14px;
-      pointer-events: none;
-    }
-`],
+  templateUrl: './graph-editor.html',
+  styleUrls: ['./graph-editor.scss'],
   host: {
     '(dragover)': 'onDragOver($event)',
     '(drop)': 'onDrop($event)',
@@ -203,8 +132,19 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     event.preventDefault();
     const action = JSON.parse(event.dataTransfer!.getData('application/json')) as Action;
     const wrapperRect = this.cyContainer.nativeElement.getBoundingClientRect();
+    const renderedPosition = {
+        x: event.clientX - wrapperRect.left,
+        y: event.clientY - wrapperRect.top
+    };
 
-    const position = { x: event.clientX - wrapperRect.left, y: event.clientY - wrapperRect.top };
+    const pan = this.cy.pan();
+    const zoom = this.cy.zoom();
+
+    // Convert rendered position to model position
+    const position = {
+        x: (renderedPosition.x - pan.x) / zoom,
+        y: (renderedPosition.y - pan.y) / zoom
+    };
 
     let shape: string = 'ellipse';
     if (action.icon === 'square') shape = 'rectangle';

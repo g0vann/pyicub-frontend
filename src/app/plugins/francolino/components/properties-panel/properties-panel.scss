@@ -1,0 +1,26 @@
+.properties {
+    height: 100%; /* Lasciamo che il contenitore si espanda */
+    width: 100%;
+    display: flex;
+    flex-direction: column; /* Lo rendiamo flex per gestire meglio gli elementi interni */
+    min-height: 0; /* ESSENZIALE, permette la compressione */
+}
+
+mat-accordion {
+    /* NON specifichiamo height: 100% qui, lasciamo che sia .properties a gestirlo */
+    flex: 1 1 auto;
+    /* Permette all'accordion di prendere l'altezza disponibile */
+    min-height: 0;
+    /* ESSENZIALE, permette la compressione */
+}
+
+.property-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 0;
+}
+
+mat-form-field {
+    width: 100%;
+}

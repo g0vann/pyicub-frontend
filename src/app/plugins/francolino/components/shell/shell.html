@@ -1,1 +1,85 @@
-<p>shell works!</p>
+<mat-toolbar color="primary">
+    <button mat-icon-button><mat-icon>menu</mat-icon></button>
+    <span>FrancOlino IO</span>
+    <span class="spacer"></span>
+    <button mat-icon-button><mat-icon>account_circle</mat-icon></button>
+</mat-toolbar>
+
+<mat-toolbar class="secondary-toolbar">
+    <!-- Azioni sinistra -->
+    <div class="cluster">
+        <button mat-icon-button aria-label="Esporta" (click)="exportGraph()" matTooltip="Esporta (Ctrl+S)">
+            <mat-icon>save</mat-icon>
+        </button>
+
+        <button mat-icon-button aria-label="Importa" (click)="fileInput.click()" matTooltip="Importa">
+            <mat-icon>file_upload</mat-icon>
+        </button>
+        <input type="file" #fileInput hidden accept=".json" (change)="onFileSelected($event)" />
+
+        <span class="v-divider" aria-hidden="true"></span>
+
+        <span matTooltip="Annulla (Ctrl+Z)">
+            <button mat-icon-button aria-label="Annulla" (click)="graphService.undo()"
+                [disabled]="!(graphService.canUndo$ | async)">
+                <mat-icon>undo</mat-icon>
+            </button>
+        </span>
+        <span matTooltip="Ripristina (Ctrl+Y)">
+            <button mat-icon-button aria-label="Ripristina" (click)="graphService.redo()"
+                [disabled]="!(graphService.canRedo$ | async)">
+                <mat-icon>redo</mat-icon>
+            </button>
+        </span>
+    </div>
+
+    <span class="spacer"></span>
+
+    <!-- Nome file al centro -->
+    <div class="filename" (dblclick)="startRename()" [attr.title]="fileName">
+        <mat-icon>description</mat-icon>
+        <input *ngIf="renaming" [(ngModel)]="fileName" (blur)="stopRename()" (keydown.enter)="stopRename()"
+            aria-label="Nome file" />
+        <span *ngIf="!renaming">{{ fileName }}</span>
+    </div>
+
+    <span class="spacer"></span>
+
+    <!-- Searchbar custom: 36px, centrata dentro la toolbar -->
+    <div class="cluster">
+        <div class="searchbar">
+            <mat-icon>search</mat-icon>
+            <input type="text" [(ngModel)]="q" (keydown.enter)="onSearch(q)" placeholder="Cerca" />
+            <button *ngIf="q" class="icon-btn" aria-label="Pulisci" (click)="q = ''">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+    </div>
+</mat-toolbar>
+
+<!-- GRID a 5 colonne: [sx] [gutter] [centro] [gutter] [dx] -->
+<div class="wrap">
+    <div class="grid">
+        <aside class="panel left">
+            <div class="scroll">
+                <app-action-palette></app-action-palette>
+            </div>
+        </aside>
+
+        <div class="gutter" (mousedown)="startDrag('left', $event)" matTooltip="Ridimensiona"
+            matTooltipPosition="right"></div>
+
+        <main class="panel center">
+            <app-graph-editor (nodeSelect)="selectedNode = $event"></app-graph-editor>
+        </main>
+
+        <div class="gutter" (mousedown)="startDrag('right', $event)" matTooltip="Ridimensiona"
+            matTooltipPosition="left"></div>
+
+        <aside class="panel right">
+            <div class="scroll">
+                <app-properties-panel [node]="selectedNode"></app-properties-panel>
+            </div>
+        </aside>
+    </div>
+</div>

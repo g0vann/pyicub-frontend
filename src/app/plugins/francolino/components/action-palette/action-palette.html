@@ -1,1 +1,33 @@
-<p>action-palette works!</p>
+<mat-accordion multi>
+    <mat-expansion-panel [expanded]="true">
+        <mat-expansion-panel-header>
+            <mat-panel-title>Nodi</mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="palette-section">
+            <mat-form-field appearance="outline" class="search-bar">
+                <mat-label>Search</mat-label>
+                <input matInput>
+                <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+            <!-- La griglia ora itera su un Observable usando la pipe async -->
+            <div class="palette-grid" *ngIf="nodeActions$ | async as nodeActions">
+                <div *ngFor="let action of nodeActions" class="palette-item node-item" draggable="true"
+                    (dragstart)="onDragStart($event, action)">
+                    <div class="node-shape" [ngClass]="action.icon" [style.background]="action.defaultColor"></div>
+                </div>
+            </div>
+        </div>
+    </mat-expansion-panel>
+    <mat-expansion-panel>
+        <mat-expansion-panel-header>
+            <mat-panel-title>Archi</mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="palette-list" *ngIf="edgeActions$ | async as edgeActions">
+            <div *ngFor="let edge of edgeActions" class="palette-item edge-item" (click)="selectEdgeType(edge.type)"
+                [class.selected]="(graphState.currentEdgeType | async) === edge.type">
+                <mat-icon>{{edge.icon}}</mat-icon>
+                <span>{{edge.name}}</span>
+            </div>
+        </div>
+    </mat-expansion-panel>
+</mat-accordion>

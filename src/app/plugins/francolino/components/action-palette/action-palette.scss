@@ -1,0 +1,88 @@
+:host {
+    display: block;
+    height: 100%;
+}
+
+.palette-section {
+    padding: 8px;
+}
+
+.search-bar {
+    width: 100%;
+}
+
+.palette-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding-top: 16px;
+}
+
+.node-item {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    /* 1:1 Aspect Ratio */
+    cursor: grab;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    transition: background .2s;
+}
+
+.node-item:active {
+    cursor: grabbing;
+    background: #f0f0f0;
+}
+
+/* Stile della forma del nodo di base */
+.node-shape {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    height: 70%;
+    transform: translate(-50%, -50%); /* centratura */
+    border: 1px solid #999;
+    box-sizing: border-box;
+}
+
+/* forme specifiche */
+.node-shape.ellipse {
+    border-radius: 50%;
+}
+
+.node-shape.rectangle {
+    border-radius: 4px;
+}
+
+.node-shape.diamond {
+    transform: translate(-50%, -50%) rotate(45deg); /* centratura + rotazione */
+    border-radius: 4px;
+}
+
+.palette-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+}
+
+.edge-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.edge-item:hover {
+    background: #f0f0f0;
+}
+
+.edge-item.selected {
+    background: #e0e0ff;
+    border-color: #3f51b5;
+}

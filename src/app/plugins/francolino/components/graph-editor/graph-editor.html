@@ -1,1 +1,17 @@
-<p>graph-editor works!</p>
+<div class="graph-container">
+    <div class="cy-container" #cyContainer></div>
+    <div class="zoom-controls">
+        <button mat-fab color="primary" (click)="zoomIn()">
+            <mat-icon>zoom_in</mat-icon>
+        </button>
+        <button mat-fab color="primary" (click)="zoomOut()">
+            <mat-icon>zoom_out</mat-icon>
+        </button>
+        <button mat-fab color="primary" (click)="fit()">
+            <mat-icon>fullscreen</mat-icon>
+        </button>
+    </div>
+    <div class="tooltip" *ngIf="(graphState.currentEdgeType | async)">
+        Per disegnare un arco clicca sul nodo di partenza e poi seleziona il nodo di destinazione
+    </div>
+</div>
