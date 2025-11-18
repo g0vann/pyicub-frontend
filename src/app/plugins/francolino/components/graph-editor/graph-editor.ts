@@ -47,27 +47,34 @@ import cytoscape, { NodeSingular } from 'cytoscape';
     :host {
       display: flex;
       flex: 1 1 auto;
-      min-height: 0;    /* IMPORTANTISSIMO in contenitori flex/grid */
+      height: 100%;
+      min-height: 0;
     }
+
     .graph-container {
       display: flex;
       flex-direction: column;
+      flex: 1 1 auto;
       width: 100%;
       height: 100%;
-      min-height: 0;
+      min-height: 0 !important;
       position: relative;
-      overflow: hidden; /* l'editor interno gestisce lo scroll */
+      overflow: hidden; /* importantissimo */
     }
+
     .cy-container {
       flex: 1 1 auto;
-      min-height: 0;
+      min-height: 0 !important;
       width: 100%;
+      height: 100%;
+      overflow: hidden !important;
       position: relative;
       background-image:
         linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
       background-size: 20px 20px;
     }
+
     .zoom-controls {
       position: absolute;
       bottom: 16px;
@@ -77,19 +84,20 @@ import cytoscape, { NodeSingular } from 'cytoscape';
       gap: 8px;
       pointer-events: auto;
     }
+
     .tooltip {
       position: absolute;
       bottom: 16px;
       left: 50%;
       transform: translateX(-50%);
-      background-color: rgba(0, 0, 0, 0.6);
+      background-color: rgba(0,0,0,0.6);
       color: white;
       padding: 8px 16px;
       border-radius: 16px;
       font-size: 14px;
       pointer-events: none;
     }
-  `],
+`],
   host: {
     '(dragover)': 'onDragOver($event)',
     '(drop)': 'onDrop($event)',
@@ -145,6 +153,10 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
 
     // Gestione eventi di Cytoscape
     this.setupCytoscapeEventHandlers();
+    setTimeout(() => {
+      this.cy.resize();
+      this.cy.fit();
+    }, 50);
   }
 
   /**

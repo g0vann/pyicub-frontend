@@ -31,6 +31,9 @@ import { Shell } from './components/shell/shell';
     MatTooltipModule,
     // La tua app
     Shell
-  ]
+  ],
+  host: {
+    style: 'display:block; width:100%; height:100%;'
+  }
 })
 export class FrancolinoComponent extends WidgetBaseComponent {}

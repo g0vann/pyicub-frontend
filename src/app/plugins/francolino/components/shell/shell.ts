@@ -128,12 +128,17 @@ import { GraphEditor }      from '../graph-editor/graph-editor';
     </div>
   `,
   styles: [`
+
     :host {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      min-height: 0;
+      width: 100%;
+      height: 100%;     /* fondamentale */
+      min-height: 0;    /* fondamentale */
+      min-width: 0;
     }
+
+
 
     .secondary-toolbar {
       background: #fff;
@@ -226,11 +231,19 @@ import { GraphEditor }      from '../graph-editor/graph-editor';
     @media (max-width: 640px) { .searchbar { width: 150px; } }
 
     /* Spazio rimanente sotto le toolbar */
-    .wrap {
-      flex: 1;
-      min-height: 0;
-      padding: 16px;
-    }
+    // .wrap {
+    //   flex: 1;
+    //   min-height: 0;
+    //   padding: 16px;
+    // }
+
+.wrap {
+  flex: 1 1 auto;
+  display: flex;     /* <<--- MANCAVA */
+  min-height: 0;
+  padding: 0 !important;
+  margin: 0;
+}
 
     /* ====== GRID ====== */
     .grid {
@@ -247,19 +260,26 @@ import { GraphEditor }      from '../graph-editor/graph-editor';
       border: 1px solid #e8e8ef;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      padding: 16px;
+      // padding: 16px;
 
       display: flex;
       flex-direction: column;
       min-height: 0;
       overflow: hidden;
     }
+
     .panel .scroll {
       flex: 1 1 auto;
       min-height: 0;
       overflow: auto;  /* scroll interno se serve */
     }
-    .center { overflow: hidden; }
+    // .center { overflow: hidden; }
+
+    .center {
+  overflow: hidden;
+  flex: 1 1 auto;   /* <-- nuovo */
+  min-height: 0;    /* <-- nuovo */
+}
 
     /* Gutter trascinabile */
     .gutter {
