@@ -1,3 +1,4 @@
+
 /**
  * @file graph.model.ts
  * @description Definisce i modelli di dati per la struttura del grafo.
@@ -16,10 +17,8 @@ export interface GraphNode {
   color: string;               // Colore di sfondo del nodo
   shape: string;               // Forma del nodo (usata da Cytoscape, es. 'ellipse', 'rectangle')
   position: { x: number; y: number }; // Posizione del nodo sulla canvas
-
-  // Proprietà aggiuntive per i dati personalizzati
-  attribute1?: string;
-  attribute2?: string;
+  type: 'action' | 'start' | 'end'; // Tipo di nodo
+  data?: any;                  // Dati specifici dell'azione, caricati dal template JSON
 }
 
 /**

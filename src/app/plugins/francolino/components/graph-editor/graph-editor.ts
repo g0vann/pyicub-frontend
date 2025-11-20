@@ -49,11 +49,22 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     this.cy = cytoscape({
       container: this.cyContainer.nativeElement,
       style: [
-        { selector: 'node', style: { 'background-color': (ele: NodeSingular) => ele.data('color'), 'label': (ele: NodeSingular) => ele.data('label'), 'shape': (ele: NodeSingular) => ele.data('shape') } },
-        { selector: '.circle', style: { 'width': '50px','height': '50px' } },
-        { selector: '.square', style: { 'width': '50px','height': '50px' } },
-        { selector: '.rectangle', style: { 'width': '70px','height': '40px' } },
-        { selector: '.diamond', style: { 'width': '50px','height': '50px' } },
+        { 
+          selector: 'node', 
+          style: { 
+            'background-color': (ele: NodeSingular) => ele.data('color'), 
+            'label': (ele: NodeSingular) => ele.data('label'), 
+            'shape': (ele: NodeSingular) => ele.data('shape'),
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'width': 'label',
+            'height': 'label',
+            'padding': '10px',
+            'font-size': '12px',
+            'color': '#fff',
+            'text-wrap': 'wrap'
+          } 
+        },
         { selector: 'edge', style: { 'width': 3, 'line-color': '#ccc', 'curve-style': 'bezier' } },
         { selector: 'edge[type="dashed"]', style: { 'line-style': 'dashed' } },
         { selector: 'edge[type="arrow"]', style: { 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ccc' } },
@@ -157,7 +168,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
       color: action.defaultColor,
       shape: shape,
       position: position,
-    });
+    }, action.name);
   }
 
   zoomIn() { this.cy.zoom(this.cy.zoom() * 1.2); }

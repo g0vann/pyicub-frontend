@@ -1,0 +1,33 @@
+{
+  "HeadAction": {
+    "description": {
+      "label": "Description",
+      "type": "string"
+    },
+    "offset_ms": {
+      "label": "Offset (ms)",
+      "type": "number",
+      "nullable": true
+    },
+    "wait_for_steps": {
+      "label": "Wait for Steps (comma-separated)",
+      "type": "boolean[]"
+    }
+  },
+  "LookAtAction": {
+    "description": {
+      "label": "Description",
+      "type": "string",
+      "nullable": true
+    },
+    "offset_ms": {
+      "label": "Offset (ms)",
+      "type": "number",
+      "nullable": true
+    },
+    "wait_for_steps": {
+      "label": "Wait for Steps (comma-separated)",
+      "type": "boolean[]"
+    }
+  }
+}

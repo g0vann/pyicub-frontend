@@ -1,42 +1,60 @@
 <div *ngIf="node; else emptyState" class="properties">
-    <mat-accordion multi>
-        <mat-expansion-panel [expanded]="true">
-            <mat-expansion-panel-header>
-                <mat-panel-title>Properties</mat-panel-title>
-            </mat-expansion-panel-header>
-            <div class="property-list">
-                <mat-form-field appearance="outline">
-                    <mat-label>Colore</mat-label>
-                    <input matInput type="color" [ngModel]="node.color"
-                        (ngModelChange)="onPropertyChange({ color: $event })" />
-                </mat-form-field>
-                <mat-form-field appearance="outline">
-                    <mat-label>Attribute 1</mat-label>
-                    <input matInput [ngModel]="node.attribute1"
-                        (ngModelChange)="onPropertyChange({ attribute1: $event })" />
-                </mat-form-field>
-                <mat-form-field appearance="outline">
-                    <mat-label>Attribute 2</mat-label>
-                    <input matInput [ngModel]="node.attribute2"
-                        (ngModelChange)="onPropertyChange({ attribute2: $event })" />
-                </mat-form-field>
-            </div>
-        </mat-expansion-panel>
-        <mat-expansion-panel [expanded]="true">
-            <mat-expansion-panel-header>
-                <mat-panel-title>Label</mat-panel-title>
-            </mat-expansion-panel-header>
-            <div class="property-list">
-                <mat-form-field appearance="outline">
-                    <mat-label>Label</mat-label>
-                    <textarea matInput [ngModel]="node.label"
-                        (ngModelChange)="onPropertyChange({ label: $event })"></textarea>
-                </mat-form-field>
-            </div>
-        </mat-expansion-panel>
-    </mat-accordion>
+  <mat-accordion multi>
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Properties</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="property-list">
+        <mat-form-field appearance="outline">
+          <mat-label>Label</mat-label>
+          <input matInput [ngModel]="node.label" (ngModelChange)="onPropertyChange('label', $event, undefined, false)" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Colore</mat-label>
+          <input matInput type="color" [ngModel]="node.color" (ngModelChange)="onPropertyChange('color', $event, undefined, false)" />
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel [expanded]="true" *ngIf="actionMetadata">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Action Parameters</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="property-list" *ngIf="node.data">
+        <ng-container *ngFor="let param of actionMetadata | keyvalue: originalOrder">
+          <div [ngSwitch]="param.value.type" class="property-item">
+
+            <mat-form-field appearance="outline" *ngSwitchCase="'string'">
+              <mat-label>{{ param.value.label }}</mat-label>
+              <input matInput [ngModel]="node.data[param.key]" (ngModelChange)="onPropertyChange(param.key, $event, param.value.type, true)" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" *ngSwitchCase="'number'">
+              <mat-label>{{ param.value.label }}</mat-label>
+              <input matInput type="number" [ngModel]="node.data[param.key]" (ngModelChange)="onPropertyChange(param.key, $event, param.value.type, true)" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" *ngSwitchCase="'boolean[]'">
+              <mat-label>{{ param.value.label }}</mat-label>
+              <input matInput [ngModel]="node.data[param.key]" (ngModelChange)="onPropertyChange(param.key, $event, param.value.type, true)" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" *ngSwitchCase="'select'">
+              <mat-label>{{ param.value.label }}</mat-label>
+              <mat-select [ngModel]="node.data[param.key]" (ngModelChange)="onPropertyChange(param.key, $event, param.value.type, true)">
+                <mat-option *ngFor="let option of param.value.options" [value]="option">
+                  {{ option }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+          </div>
+        </ng-container>
+      </div>
+    </mat-expansion-panel>
+  </mat-accordion>
 </div>
 
 <ng-template #emptyState>
-    <p>Nessun nodo selezionato.</p>
+  <p>Nessun nodo selezionato.</p>
 </ng-template>

@@ -13,6 +13,7 @@
             <div class="palette-grid" *ngIf="nodeActions$ | async as nodeActions">
                 <div *ngFor="let action of nodeActions" class="palette-item node-item" draggable="true"
                     (dragstart)="onDragStart($event, action)">
+                    <div class="node-name">{{ action.name }}</div>
                     <div class="node-shape" [ngClass]="action.icon" [style.background]="action.defaultColor"></div>
                 </div>
             </div>

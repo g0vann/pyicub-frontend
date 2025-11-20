@@ -119,92 +119,82 @@ export class Shell {
       states: [],
       transitions: [],
       initial_state: '',
+      actions: {},
     };
 
-    const actionPromises: Promise<{name: string, data: string}>[] = [];
-
     for (const node of graphData.nodes) {
-      if (node.label === 'Init') {
+      if (node.type === 'start') {
         fsmJson.initial_state = 'init';
-      } else if (node.label !== 'End') {
-        const actionPromise = lastValueFrom(this.http.get(`assets/json/${node.label}.json`, { responseType: 'text' }))
-          .then(data => ({ name: node.label, data }));
-        actionPromises.push(actionPromise);
+      } else if (node.type === 'action') {
+        fsmJson.states.push({ name: node.label, description: node.data.description });
+        fsmJson.actions[node.label] = JSON.parse(JSON.stringify(node.data)); // Deep copy
       }
     }
 
-    Promise.all(actionPromises).then(actions => {
-      const formattedActions = actions.map(action => {
-        const actionDataIndented = action.data.split('\n').map((line, index) => {
-          return (index === 0 ? '' : '    ') + line; // Indent all lines except the first
-        }).join('\n');
-        return `"${action.name}": ${actionDataIndented}`;
-      });
-      const actionsJson = formattedActions.join(',\n');
-
-      for (const action of actions) {
-          const actionObj = JSON.parse(action.data);
-          fsmJson.states.push({ name: actionObj.name, description: actionObj.description });
-      }
-
-      for (const edge of graphData.edges) {
+    for (const edge of graphData.edges) {
         const sourceNode = graphData.nodes.find(n => n.id === edge.source);
         const targetNode = graphData.nodes.find(n => n.id === edge.target);
 
         if (sourceNode && targetNode) {
-          const sourceName = sourceNode.label === 'Init' ? 'init' : sourceNode.label;
-          const targetName = targetNode.label === 'Init' ? 'init' : targetNode.label;
+            const sourceName = sourceNode.type === 'start' ? 'init' : sourceNode.label;
+            const targetName = targetNode.type === 'start' ? 'init' : targetNode.label;
 
-          fsmJson.transitions.push({
-            trigger: `${sourceName}>${targetName}`,
-            source: sourceName,
-            dest: targetName,
-          });
+            fsmJson.transitions.push({
+                trigger: `${sourceName}>${targetName}`,
+                source: sourceName,
+                dest: targetName,
+            });
         }
-      }
+    }
 
-      const finalJsonString = `{
-  "name": "iCubFSM",
-  "states": ${JSON.stringify(fsmJson.states, null, 2)},
-  "transitions": ${JSON.stringify(fsmJson.transitions, null, 2)},
-  "initial_state": "${fsmJson.initial_state}",
-  "actions": {
-    ${actionsJson}
-  }
-}`;
-
-      const blob = new Blob([finalJsonString], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = this.fileName || 'grafo.json';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    });
-  }
-
-  onFileSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (!input.files?.length) return;
-    const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const graphData = JSON.parse(reader.result as string) as GraphData;
-        if (graphData && Array.isArray(graphData.nodes) && Array.isArray(graphData.edges)) {
-          this.graphService.loadGraph(graphData);
-          this.fileName = file.name || 'Grafo.json';
-        } else {
-          alert('Errore: Il file JSON non ha un formato valido.');
+    const traverseAndMark = (obj, key = '') => {
+        if (!obj) return;
+        if (Array.isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+                if(typeof obj[i] === 'number') {
+                    if (key === 'target_joints' || key === 'checkpoints') {
+                       if (Number.isInteger(obj[i])) {
+                          obj[i] = { __float: obj[i] };
+                       }
+                    }
+                } else if (typeof obj[i] === 'object') {
+                    traverseAndMark(obj[i], key);
+                }
+            }
+            return;
         }
-      } catch (e) {
-        console.error('Errore durante il parsing del file JSON:', e);
-        alert('Errore: Il file selezionato non è un JSON valido.');
-      }
+        if (typeof obj === 'object') {
+            Object.entries(obj).forEach(([k, value]) => {
+                if (k === 'duration' || k === 'timeout') {
+                    if (typeof value === 'number') {
+                        obj[k] = { __float: value };
+                    }
+                } else {
+                    traverseAndMark(value, k);
+                }
+            });
+        }
     };
-    reader.readAsText(file);
-    input.value = '';
+    
+    traverseAndMark(fsmJson.actions);
+
+    let jsonString = JSON.stringify(fsmJson, null, 2);
+    jsonString = jsonString.replace(/{\s*"__float":\s*(-?\d+\.?\d*)\s*}/g, (match, numberStr) => {
+      const num = parseFloat(numberStr);
+      if (numberStr.includes('.')) {
+        return numberStr;
+      }
+      return num.toFixed(1);
+    });
+
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = this.fileName || 'grafo.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   }
 }

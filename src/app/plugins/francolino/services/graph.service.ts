@@ -1,13 +1,15 @@
+
 /**
  * @file graph.service.ts
  * @description Servizio centrale per la gestione dello stato del grafo (Single Source of Truth).
  * Contiene tutti i nodi e gli archi e fornisce metodi per manipolarli.
  */
 
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import {inject, Injectable} from '@angular/core';
+import { BehaviorSubject, lastValueFrom, Observable } from 'rxjs';
 import { GraphData, GraphNode, GraphEdge } from '../models/graph.model';
 import { v4 as uuid } from 'uuid';
+import {HttpClient} from "@angular/common/http";
 
 /**
  * @class GraphService
@@ -17,6 +19,7 @@ import { v4 as uuid } from 'uuid';
   providedIn: 'root'
 })
 export class GraphService {
+  private http = inject(HttpClient);
 
   private readonly graphData$ = new BehaviorSubject<GraphData>({ nodes: [], edges: [] });
 
@@ -42,16 +45,30 @@ export class GraphService {
     this.graphData$.next(data);
   }
 
-  addNode(nodeData: Partial<GraphNode>) {
+  async addNode(nodeData: Partial<GraphNode>, actionType?: string) {
     this.pushStateToHistory(this.graphData$.getValue());
     const currentState = this.graphData$.getValue();
+
+    let actionData: any = {};
+    if (actionType && actionType !== 'start' && actionType !== 'end') {
+      try {
+        // Fetch as text to preserve formatting
+        const actionText = await lastValueFrom(this.http.get(`assets/json/${actionType}.json`, { responseType: 'text' }));
+        actionData = JSON.parse(actionText); // still parse to work with it, export will be custom
+      } catch (e) {
+        console.error(`Could not load action template for ${actionType}`, e);
+      }
+    }
+
     const newNode: GraphNode = {
       id: uuid(),
-      label: '',
+      label: nodeData.label || actionType || '',
       color: '#ccc',
       shape: 'ellipse',
       position: { x: 100, y: 100 },
-      ...nodeData
+      ...nodeData,
+      type: actionType ? (actionType === 'Init' ? 'start' : (actionType === 'End' ? 'end' : 'action')) : 'action',
+      data: actionData
     } as GraphNode;
 
     this.graphData$.next({ ...currentState, nodes: [...currentState.nodes, newNode] });
