@@ -25,6 +25,7 @@ import {getApplicationFSMResponse} from "./types/GetApplicationFSMResponse";
 import {SessionStorageService} from "../session-storage.service";
 import {Service, ServiceState} from "../../types/Service";
 
+
 @Injectable({
   providedIn: 'root'
 })
@@ -156,6 +157,7 @@ export class ApiService implements IApiService {
   }
 
   getApplicationFSM(robotName: string, appName: string, appPort: string) {
+    /* COMMENTED OUT FOR TESTING LOCAL FSM
     return this.runService<getApplicationFSMResponse>(robotName, appName, appPort, "fsm.toJSON").pipe(
       map(response => {
 
@@ -195,6 +197,47 @@ export class ApiService implements IApiService {
 
       })
     )
+    */
+
+    // BEGIN LOCAL FSM LOADING FOR TESTING
+    return this.http.get<getApplicationFSMResponse>('assets/json/output.json').pipe(
+      map(response => {
+        let nodes: FSMNode[] = response.states.map(state => {
+          let node: FSMNode = {
+            name: state.name,
+            id: state.name,
+            description: state.description
+          }
+          return node
+        })
+
+        let edges: FSMEdge[] = response.transitions.map(transition => {
+          let edge: FSMEdge = {
+            sourceID: transition.source,
+            targetID: transition.dest,
+            trigger: transition.trigger
+          }
+          return edge
+        })
+
+        let initState: FSMNode = {
+          name: response.initial_state,
+          id: response.initial_state,
+          description: ""
+        }
+        //inserisco lo stato iniziale come primo dell'array. è importante che sia il primo poichè cosi il motore grafico che renderizza l'FSM lo posiziona all'estrema sinistra.
+        nodes.unshift(initState)
+
+        const fsmDefaultConfig = defaultDashboardConfig["Finite State Machine"];
+        const x = fsmDefaultConfig.x || 0;
+        const y = fsmDefaultConfig.y || 0;
+        const cols = fsmDefaultConfig.cols || 50;
+        const rows = fsmDefaultConfig.rows || 70;
+
+        return new FSM(nodes, edges, cols, rows, x, y)
+      })
+    );
+    // END LOCAL FSM LOADING FOR TESTING
   }
 
   getServices(robotName: string = "", appName: string = "") {

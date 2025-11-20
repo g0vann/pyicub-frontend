@@ -1,19 +1,19 @@
 [
   {
     "id": "node-1",
-    "name": "Start",
+    "name": "Init",
     "icon": "ellipse",
     "defaultColor": "#4CAF50"
   },
   {
     "id": "node-2",
-    "name": "Step",
+    "name": "HeadAction",
     "icon": "rectangle",
     "defaultColor": "#2196F3"
   },
   {
     "id": "node-3",
-    "name": "Decision",
+    "name": "LookAtAction",
     "icon": "diamond",
     "defaultColor": "#FFC107"
   },

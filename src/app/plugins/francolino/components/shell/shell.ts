@@ -5,6 +5,8 @@
 import { Component, inject, ViewChild, ElementRef, HostBinding, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { lastValueFrom } from 'rxjs';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule }    from '@angular/material/icon';
@@ -33,7 +35,8 @@ import { GraphEditor }      from '../graph-editor/graph-editor';
     // App
     ActionPalette,
     PropertiesPanel,
-    GraphEditor
+    GraphEditor,
+    HttpClientModule
   ],
   templateUrl: './shell.html',
   styleUrls: ['./shell.scss']
@@ -45,6 +48,7 @@ export class Shell {
   @ViewChild(GraphEditor) editor!: GraphEditor;
 
   public graphService = inject(GraphService);
+  public http = inject(HttpClient);
 
   @HostBinding('style.--left')  leftCss  = '280px';
   @HostBinding('style.--right') rightCss = '320px';
@@ -109,14 +113,76 @@ export class Shell {
 
   exportGraph() {
     const graphData = this.graphService.getCurrentGraphData();
-    const jsonString = JSON.stringify(graphData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = this.fileName || 'grafo.json';
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+
+    const fsmJson: any = {
+      name: 'iCubFSM',
+      states: [],
+      transitions: [],
+      initial_state: '',
+    };
+
+    const actionPromises: Promise<{name: string, data: string}>[] = [];
+
+    for (const node of graphData.nodes) {
+      if (node.label === 'Init') {
+        fsmJson.initial_state = 'init';
+      } else if (node.label !== 'End') {
+        const actionPromise = lastValueFrom(this.http.get(`assets/json/${node.label}.json`, { responseType: 'text' }))
+          .then(data => ({ name: node.label, data }));
+        actionPromises.push(actionPromise);
+      }
+    }
+
+    Promise.all(actionPromises).then(actions => {
+      const formattedActions = actions.map(action => {
+        const actionDataIndented = action.data.split('\n').map((line, index) => {
+          return (index === 0 ? '' : '    ') + line; // Indent all lines except the first
+        }).join('\n');
+        return `"${action.name}": ${actionDataIndented}`;
+      });
+      const actionsJson = formattedActions.join(',\n');
+
+      for (const action of actions) {
+          const actionObj = JSON.parse(action.data);
+          fsmJson.states.push({ name: actionObj.name, description: actionObj.description });
+      }
+
+      for (const edge of graphData.edges) {
+        const sourceNode = graphData.nodes.find(n => n.id === edge.source);
+        const targetNode = graphData.nodes.find(n => n.id === edge.target);
+
+        if (sourceNode && targetNode) {
+          const sourceName = sourceNode.label === 'Init' ? 'init' : sourceNode.label;
+          const targetName = targetNode.label === 'Init' ? 'init' : targetNode.label;
+
+          fsmJson.transitions.push({
+            trigger: `${sourceName}>${targetName}`,
+            source: sourceName,
+            dest: targetName,
+          });
+        }
+      }
+
+      const finalJsonString = `{
+  "name": "iCubFSM",
+  "states": ${JSON.stringify(fsmJson.states, null, 2)},
+  "transitions": ${JSON.stringify(fsmJson.transitions, null, 2)},
+  "initial_state": "${fsmJson.initial_state}",
+  "actions": {
+    ${actionsJson}
+  }
+}`;
+
+      const blob = new Blob([finalJsonString], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = this.fileName || 'grafo.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    });
   }
 
   onFileSelected(event: Event) {
