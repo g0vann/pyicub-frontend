@@ -1,0 +1,15 @@
+Prossimi passi per l'applicazione:
+
+0. Implementare due tasti: 1. Modifica del tasto salvataggio in francolino.plugin (che oltre a scaricare il json deve fare la chiamata lod_fsm) 2. Dentro fsm.plugin u pulsante per fare il reload di se stesso
+0.1 Capire cosa fa l'Action Manager dato che non visualizzare Action1 e Action2
+0.2 
+
+
+
+1. Implementare meglio lettura del json dal graph-editor e struttura del json 
+2. trovare un modo per render compatibile il json utilizzato da fsm.plugin direttamente con il graph-editor di francolino.plugin
+3. Riprogettare francolino direttamente come figlio di fsm in modo da poter facilmente passare avanti e indietro le modifiche ai json
+4. Implementare un pulsante che da fsm lancia francolino (tipo occupando tutto lo schermo) e che una volta chiuso ripristini la griglia 
+5. CAPIRE LE NUOVE AZIONI E QUALI POTREBBERO ESSERE LE PROPPRIETÀ MODIFICABILI 
+6. Miglioramento generale della grafica
+7. Eliminare o ripensare la "lable" magari trasformandolo in un menù a tendina che ti fa cambiare il tipo di azioni    
