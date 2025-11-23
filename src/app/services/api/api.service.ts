@@ -157,7 +157,7 @@ export class ApiService implements IApiService {
   }
 
   getApplicationFSM(robotName: string, appName: string, appPort: string) {
-    /* COMMENTED OUT FOR TESTING LOCAL FSM
+    // COMMENTED OUT FOR TESTING LOCAL FSM
     return this.runService<getApplicationFSMResponse>(robotName, appName, appPort, "fsm.toJSON").pipe(
       map(response => {
 
@@ -197,8 +197,9 @@ export class ApiService implements IApiService {
 
       })
     )
-    */
+    
 
+    /*
     // BEGIN LOCAL FSM LOADING FOR TESTING
     return this.http.get<getApplicationFSMResponse>('assets/json/output.json').pipe(
       map(response => {
@@ -238,6 +239,7 @@ export class ApiService implements IApiService {
       })
     );
     // END LOCAL FSM LOADING FOR TESTING
+    */
   }
 
   getServices(robotName: string = "", appName: string = "") {

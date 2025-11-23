@@ -1,16 +1,19 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, OnDestroy} from '@angular/core';
 import {WidgetBaseComponent} from '../../widget-base/widget-base.component';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-actions-manager',
   templateUrl: './actions-manager.component.html',
   styleUrl: './actions-manager.component.css'
 })
-export class ActionsManagerComponent extends WidgetBaseComponent implements OnInit {
+export class ActionsManagerComponent extends WidgetBaseComponent implements OnInit, OnDestroy {
 
   actions: Action[] = []
   isLoading = true;
   search: string
+  private destroy$ = new Subject<void>();
 
   showErrorDialog: boolean = false;
   errorMessage: string;
@@ -35,6 +38,22 @@ export class ActionsManagerComponent extends WidgetBaseComponent implements OnIn
   }
 
   ngOnInit() {
+    this.loadActions();
+
+    this.appStateService.refreshPlugins$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.loadActions();
+      });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadActions() {
+    this.isLoading = true;
     this.getRobotActions().subscribe({
         next: actions => {
           const filteredActions = actions.filter(action => action.startsWith(this.application.name + ".")).map(action => action.substring(this.application.name.length + 1))

@@ -4,7 +4,7 @@ import {InputNode} from "../../graphy/models/input-node.model";
 import {InputEdge} from "../../graphy/models/input-edge.model";
 import {NodeStatus} from "../../types/FSM";
 import {GraphyComponent} from "../../graphy/graphy.component";
-import {forkJoin} from "rxjs";
+import {forkJoin, switchMap} from "rxjs";
 
 interface nodeData {
   name: string,
@@ -58,27 +58,26 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
   terminalNodes: { nodeID: string, restartTrigger: string }[] = [];
 
   ngOnInit() {
-    // Polling mechanism: print message to console every 1000ms and execute checkAsyncRequestStatus
-
     this.pollingInterval = setInterval(() => {
       console.log("Polling message: Component is alive and polling every 1000ms");
 
-      // Call fsmGetProcesses and pass the reqID to checkAsyncRequestStatus
+      if(this.isLoading) return;
+
       this.fsmGetCurrentState().subscribe(currentState => {
-
-
         if (currentState == "init") {
           if(this.previousNodeID) {
-            this.updateNodeState(this.getNodeByID(this.previousNodeID), NodeStatus.INACTIVE);
+            const previousNode = this.getNodeByID(this.previousNodeID);
+            if (previousNode) {
+              this.updateNodeState(previousNode, NodeStatus.INACTIVE);
+            }
           }
           return;
         }
 
         let currentNode = this.getNodeByID(currentState);
+        if (!currentNode) return; // Guard against node not found
 
-        // Fetch current state first
         this.fsmGetCurrentProcess().subscribe(reqID => {
-
           this.currentNodeID = currentNode.id;
 
           const onRunning = () => {
@@ -91,7 +90,6 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
           const onDone = () => {
             this.updateNodeState(currentNode, NodeStatus.DONE);
             const reachableNodes = this.findReachableNodes(currentNode.id);
-            // Deactivate not reachable nodes
             const notReachableNodes = this.nodes.filter(a => !reachableNodes.some(b => b.id === a.id))
             for (let node of notReachableNodes){
               if (node.data.state === NodeStatus.ACTIVE){
@@ -131,16 +129,35 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
             this.previousNodeID = currentNode.id;
           };
 
-          // Call checkAsyncRequestStatus with the current state passed to onRunning
           this.checkAsyncRequestStatus(reqID, undefined, onRunning, onDone, onFailed, onTimeout);
         });
       });
     }, 250);
 
-    forkJoin({
-      fsm: this.getApplicationFSM(),
-      currentStateName: this.fsmGetCurrentState()
-    }).subscribe({
+    this.loadFSM();
+  }
+
+  public reloadFSM(): void {
+    this.loadFSM();
+  }
+
+  private loadFSM(): void {
+    this.isLoading = true;
+    this.nodes = [];
+    this.edges = [];
+    this.terminalNodes = [];
+    this.startingNode = undefined;
+    this.currentNodeID = undefined;
+    this.previousNodeID = undefined;
+
+    this.appStateService.configureApplication(this.application, this.application.args).pipe(
+      switchMap(() => {
+        return forkJoin({
+          fsm: this.getApplicationFSM(),
+          currentStateName: this.fsmGetCurrentState()
+        });
+      })
+    ).subscribe({
       next: ({fsm, currentStateName}) => {
         let inputEdges = fsm.edges.map(edge => {
           const inputEdge: InputEdge = {
@@ -194,16 +211,12 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
 
         const terminalNode = this.terminalNodes.find(node => node.nodeID === currentStateName);
         if (currentStateName === "init") {
-
           let startingNode = this.getNodeByID(this.startingNode.nodeID);
           startingNode.data.state = NodeStatus.ACTIVE;
           this.currentNodeID = "init";
-          this.isLoading = false;
-
         } else if (terminalNode) {
           this.fsmRunStep(terminalNode.restartTrigger).subscribe(reqID => {
             const onDoneRestart = () => {
-              this.isLoading = false;
               this.currentNodeID = "init";
               const startingNode = this.getNodeByID(this.startingNode.nodeID);
               this.updateNodeState(startingNode, NodeStatus.ACTIVE);
@@ -216,22 +229,22 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
           for (let node of reachableNodes) {
             node.data.state = NodeStatus.ACTIVE;
           }
-          this.isLoading = false;
         }
-
+        
+        this.isLoading = false;
+        this.appStateService.triggerPluginsRefresh();
       },
-      error: () => {
+      error: (err) => {
         this.openErrorDialog("Impossibile caricare l'FSM.");
         this.isLoading = false;
+        console.error("Failed to configure and load FSM:", err);
       }
     });
-
   }
 
-  // Stop polling when the component is destroyed
   ngOnDestroy() {
     if (this.pollingInterval) {
-      clearInterval(this.pollingInterval); // Clear the interval to prevent memory leaks
+      clearInterval(this.pollingInterval);
       console.log("Polling stopped");
     }
   }
@@ -239,8 +252,7 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
   isEdgeActive(edge: InputEdge) {
     const targetNode = this.getNodeByID(edge.targetId);
     const sourceNode = this.getNodeByID(edge.sourceId);
-    //return sourceNode.data.state !== NodeStatus.INACTIVE && targetNode.data.state === NodeStatus.ACTIVE;
-    return (sourceNode.data.state !== NodeStatus.INACTIVE && targetNode.data.state === NodeStatus.ACTIVE) || (sourceNode.data.state == NodeStatus.DONE)
+    return (sourceNode.data.state !== NodeStatus.INACTIVE && targetNode.data.state === NodeStatus.ACTIVE) || (sourceNode.data.state == NodeStatus.DONE);
   }
 
   onNodeClick(selectedNode: InputNode<nodeData>) {
@@ -251,7 +263,6 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
 
   private runStep(selectedNode: InputNode<nodeData>) {
     let trigger: string;
-
     const terminalNode = this.terminalNodes.find(node => node.nodeID === this.currentNodeID);
     if(terminalNode){
       this.fsmRunStep(terminalNode.restartTrigger).subscribe();
@@ -261,9 +272,12 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
       trigger = this.startingNode.startTrigger;
     } else {
       const selectedEdge = this.edges.find(edge => edge.sourceId === this.currentNodeID && edge.targetId === selectedNode.id);
-      trigger = selectedEdge.id;
+      if (selectedEdge) {
+        trigger = selectedEdge.id;
+      } else {
+        return; // No valid trigger found
+      }
     }
-    //this.currentNodeID = selectedNode.id;
     this.fsmRunStep(trigger).subscribe();
   }
 
@@ -285,7 +299,9 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
     this.edges.forEach(edge => {
       if (edge.sourceId === nodeID) {
         const reachableNode = this.getNodeByID(edge.targetId);
-        reachableNodes.push(reachableNode);
+        if (reachableNode) {
+          reachableNodes.push(reachableNode);
+        }
       }
     })
     return reachableNodes;
@@ -301,6 +317,17 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
     this.showErrorDialog = false;
   }
 
-  protected readonly NodeStatus = NodeStatus;
+  public forceResetFSM(): void {
+    this.appStateService.configureApplication(this.application, this.application.args).subscribe({
+      next: () => {
+        this.loadFSM();
+      },
+      error: (err) => {
+        console.error("Error forcing FSM reset via configure:", err);
+        this.openErrorDialog("Impossibile forzare il reset della FSM.");
+      }
+    });
+  }
 
+  protected readonly NodeStatus = NodeStatus;
 }

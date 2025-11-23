@@ -1,3 +1,9 @@
+<button mat-icon-button (click)="reloadFSM()" style="position: absolute; top: 10px; right: 10px; z-index: 10;" matTooltip="Reload FSM">
+    <mat-icon>refresh</mat-icon>
+</button>
+<button mat-icon-button (click)="forceResetFSM()" style="position: absolute; top: 10px; right: 60px; z-index: 10;" matTooltip="Force Reset FSM">
+    <mat-icon>restart_alt</mat-icon>
+</button>
 <!-- il controllo su width ed height serve per attendere che le dimensioni del container nella griglia siano state definite prima di procedere col rendering dei nodi-->
 <graphy-ng *ngIf="width && height && !isLoading; else elseBlock">
 

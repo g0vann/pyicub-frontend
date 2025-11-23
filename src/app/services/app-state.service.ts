@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {Robot} from "../types/Robot";
 import {ApiService} from "./api/api.service";
-import {BehaviorSubject} from "rxjs";
+import {BehaviorSubject, Subject} from "rxjs";
 import {Application} from "../types/Application";
 import {LocalStorageService} from "./local-storage.service";
 import {ApiMockService} from "./api/api.mock.service";
@@ -43,10 +43,17 @@ export class AppStateService {
     this._selectedRobot.next(val);
   }
 
+  private readonly _refreshPlugins = new Subject<void>();
+  readonly refreshPlugins$ = this._refreshPlugins.asObservable();
+
   constructor(public apiService:ApiService, private localStorageService:LocalStorageService,private sessionStorageService:SessionStorageService) {
     //console.log("COSTRUTTORE CHIAMATO")
     this.initApp()
 
+  }
+
+  triggerPluginsRefresh() {
+    this._refreshPlugins.next();
   }
 
   private initApp(){
@@ -85,7 +92,7 @@ export class AppStateService {
       //console.log("ROBOTS",JSON.parse(JSON.stringify(robots)))
       this.availableRobots = robots
       this.isLoadingRobots = false;
-
+      this.triggerPluginsRefresh();
     })
 
   }
