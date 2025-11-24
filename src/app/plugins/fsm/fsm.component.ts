@@ -4,7 +4,7 @@ import {InputNode} from "../../graphy/models/input-node.model";
 import {InputEdge} from "../../graphy/models/input-edge.model";
 import {NodeStatus} from "../../types/FSM";
 import {GraphyComponent} from "../../graphy/graphy.component";
-import {forkJoin, switchMap} from "rxjs";
+import {forkJoin, Subject, switchMap, takeUntil} from "rxjs";
 
 interface nodeData {
   name: string,
@@ -22,6 +22,7 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
   showErrorDialog: boolean = false;
   errorMessage: string;
   pollingInterval: any; // Variable to hold the interval reference
+  private destroy$ = new Subject<void>();
 
   private _graphy: GraphyComponent<any, any>;
   @ViewChild(GraphyComponent)
@@ -135,6 +136,12 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
     }, 250);
 
     this.loadFSM();
+
+    this.appStateService.reloadFsmPlugin$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.reloadFSM();
+      });
   }
 
   public reloadFSM(): void {
@@ -243,6 +250,8 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
   }
 
   ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       console.log("Polling stopped");

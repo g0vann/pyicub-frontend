@@ -46,6 +46,9 @@ export class AppStateService {
   private readonly _refreshPlugins = new Subject<void>();
   readonly refreshPlugins$ = this._refreshPlugins.asObservable();
 
+  private readonly _reloadFsmPlugin = new Subject<void>();
+  readonly reloadFsmPlugin$ = this._reloadFsmPlugin.asObservable();
+
   constructor(public apiService:ApiService, private localStorageService:LocalStorageService,private sessionStorageService:SessionStorageService) {
     //console.log("COSTRUTTORE CHIAMATO")
     this.initApp()
@@ -54,6 +57,10 @@ export class AppStateService {
 
   triggerPluginsRefresh() {
     this._refreshPlugins.next();
+  }
+
+  triggerFsmPluginReload() {
+    this._reloadFsmPlugin.next();
   }
 
   private initApp(){

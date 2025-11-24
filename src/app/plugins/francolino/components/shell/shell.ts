@@ -19,6 +19,8 @@ import { PropertiesPanel }  from '../properties-panel/properties-panel';
 import { GraphService }     from '../../services/graph.service';
 import { GraphData }        from '../../models/graph.model';
 import { GraphEditor }      from '../graph-editor/graph-editor';
+import { AppStateService } from '../../../../services/app-state.service';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-shell',
@@ -49,6 +51,7 @@ export class Shell {
 
   public graphService = inject(GraphService);
   public http = inject(HttpClient);
+  public appStateService = inject(AppStateService);
 
   @HostBinding('style.--left')  leftCss  = '280px';
   @HostBinding('style.--right') rightCss = '320px';
@@ -135,7 +138,7 @@ export class Shell {
     ev.preventDefault();
   }
 
-  exportGraph() {
+  async exportGraph() {
     const graphData = this.graphService.getCurrentGraphData();
 
     const fsmJson: any = {
@@ -220,5 +223,13 @@ export class Shell {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-  }
-}
+
+    try {
+      const backendUrl = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/icubSim/DynamicFSMServer/load_fsm`;
+      await lastValueFrom(this.http.post(backendUrl, fsmJson));
+      this.appStateService.triggerFsmPluginReload();
+    } catch (e) {
+      console.error('Error sending FSM to backend', e);
+      alert('Error sending FSM to backend');
+    }
+  }}
