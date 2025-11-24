@@ -70,23 +70,7 @@ export class Shell {
   onSearch(q: string) { /* TODO: ricerca nel grafo */ }
   fitGraph() { this.editor?.fit(); }
 
-  @HostListener('window:keydown', ['$event'])
-  onWindowKeydown(e: KeyboardEvent) {
-    const t = e.target as HTMLElement | null;
-    if (t) {
-      const tag = t.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || (t as any).isContentEditable) return;
-    }
-    const ctrlOrMeta = e.ctrlKey || e.metaKey;
-    if (!ctrlOrMeta) return;
 
-    const key = String(e.key || '').toLowerCase();
-    if (key === 's') { e.preventDefault(); this.exportGraph(); return; }
-    if (key === 'o') { e.preventDefault(); this.fileInput.nativeElement.click(); return; }
-    if (key === 'z' && e.shiftKey) { e.preventDefault(); this.graphService.redo(); return; }
-    if (key === 'z') { e.preventDefault(); this.graphService.undo(); return; }
-    if (key === 'y') { e.preventDefault(); this.graphService.redo(); return; }
-  }
 
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -138,7 +122,8 @@ export class Shell {
     ev.preventDefault();
   }
 
-  async exportGraph() {
+
+  private _generateFsmJson(): { jsonString: string, fsmJson: any } {
     const graphData = this.graphService.getCurrentGraphData();
 
     const fsmJson: any = {
@@ -174,7 +159,7 @@ export class Shell {
         }
     }
 
-    const traverseAndMark = (obj, key = '') => {
+    const traverseAndMark = (obj: any, key = '') => {
         if (!obj) return;
         if (Array.isArray(obj)) {
             for (let i = 0; i < obj.length; i++) {
@@ -214,6 +199,11 @@ export class Shell {
       return num.toFixed(1);
     });
 
+    return { jsonString, fsmJson };
+  }
+
+  downloadFsm() {
+    const { jsonString } = this._generateFsmJson();
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -223,13 +213,31 @@ export class Shell {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+  }
 
+  async saveFsm() {
+    const { fsmJson } = this._generateFsmJson();
     try {
       const backendUrl = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/icubSim/DynamicFSMServer/load_fsm`;
       await lastValueFrom(this.http.post(backendUrl, fsmJson));
       this.appStateService.triggerFsmPluginReload();
+      alert('FSM salvata con successo!');
     } catch (e) {
       console.error('Error sending FSM to backend', e);
-      alert('Error sending FSM to backend');
+      alert('Errore nell\'invio della FSM al backend');
     }
-  }}
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeydown(e: KeyboardEvent) {
+    const t = e.target as HTMLElement | null;
+    if (t) {
+      const tag = t.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || (t instanceof HTMLElement && t.isContentEditable)) return;
+    }
+    const ctrlOrMeta = e.ctrlKey || e.metaKey;
+    if (!ctrlOrMeta) return;
+
+    const key = String(e.key || '').toLowerCase();
+    if (key === 's') { e.preventDefault(); this.saveFsm(); return; }
+}}

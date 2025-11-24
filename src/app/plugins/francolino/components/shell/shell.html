@@ -8,9 +8,13 @@
 <mat-toolbar class="secondary-toolbar">
     <!-- Azioni sinistra -->
     <div class="cluster">
-        <button mat-icon-button aria-label="Esporta" (click)="exportGraph()" matTooltip="Esporta (Ctrl+S)">
+        <button mat-icon-button aria-label="Esporta" (click)="downloadFsm()" matTooltip="Esporta FSM (Ctrl+S)">
+            <mat-icon>download</mat-icon>
+        </button>
+        <button mat-icon-button aria-label="Salva FSM" (click)="saveFsm()" matTooltip="Salva FSM">
             <mat-icon>save</mat-icon>
         </button>
+
         <button mat-icon-button aria-label="Importa" (click)="fileInput.click()" matTooltip="Importa (Ctrl+O)">
             <mat-icon>folder_open</mat-icon>
         </button>
