@@ -4,7 +4,7 @@
  * dove il grafo viene visualizzato e manipolato.
  */
 
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, Output, EventEmitter, inject } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, Output, EventEmitter, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,6 +13,9 @@ import { Action } from '../../models/action';
 import { GraphStateService, EdgeType } from '../../services/graph-state';
 import { GraphService } from '../../services/graph.service';
 import cytoscape, { NodeSingular } from 'cytoscape';
+import cxtmenu from 'cytoscape-cxtmenu';
+
+cytoscape.use(cxtmenu);
 
 /**
  * @class GraphEditor
@@ -45,6 +48,15 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
   public graphState = inject(GraphStateService);
   private graphService = inject(GraphService);
 
+  @HostListener('window:keydown.delete', ['$event'])
+  onDeleteKeyPress(event: KeyboardEvent) {
+    const selected = this.cy.elements(':selected');
+    if (selected.length > 0) {
+      const idsToRemove = selected.map(el => el.id());
+      this.graphService.removeElements(idsToRemove);
+    }
+  }
+
   ngAfterViewInit() {
     this.cy = cytoscape({
       container: this.cyContainer.nativeElement,
@@ -57,15 +69,17 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
             'shape': (ele: NodeSingular) => ele.data('shape'),
             'text-valign': 'center',
             'text-halign': 'center',
-            'width': 'label',
-            'height': 'label',
-            'padding': '10px',
+            'width': (ele: NodeSingular) => (ele.data('label') || '').length * 7 + 25,
+            'height': 35,
+            'padding': '0px',
             'font-size': '12px',
             'color': '#fff',
-            'text-wrap': 'wrap'
+            'text-wrap': 'none'
           } 
         },
         { selector: 'edge', style: { 'width': 3, 'line-color': '#ccc', 'curve-style': 'bezier' } },
+        { selector: ':selected', style: { 'border-width': 3, 'border-color': '#3f51b5' } },
+        { selector: 'edge:selected', style: { 'line-color': '#3f51b5', 'source-arrow-color': '#3f51b5', 'target-arrow-color': '#3f51b5' } },
         { selector: 'edge[type="dashed"]', style: { 'line-style': 'dashed' } },
         { selector: 'edge[type="arrow"]', style: { 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ccc' } },
         { selector: 'edge[type="bi-arrow"]', style: { 'source-arrow-shape': 'triangle', 'source-arrow-color': '#ccc', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ccc' } },
@@ -74,13 +88,48 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
       layout: { name: 'preset' }
     });
 
+    (this.cy as any).cxtmenu({
+      selector: 'node, edge',
+      commands: [
+        {
+          content: '<span class="material-icons">delete</span> Elimina',
+          contentAsHTML: true,
+          select: (ele) => {
+            this.graphService.removeElements([ele.id()]);
+          }
+        }
+      ]
+    });
+
     // Sottoscrizione allo stato del grafo dal servizio
     this.subs.add(this.graphService.getGraphData().subscribe(graphData => {
+      console.log('GraphEditor received new graphData');
+      if (!graphData || !graphData.nodes) {
+          console.log('Received empty or invalid graphData. Skipping render.');
+          return;
+      }
       const cyElements = {
-        nodes: graphData.nodes.map(node => ({ data: { ...node }, position: node.position })),
+        nodes: graphData.nodes.map(node => {
+            const { position, ...data } = node;
+            return { data, position };
+        }),
         edges: graphData.edges.map(edge => ({ data: { ...edge } }))
       };
-      this.cy.json({ elements: cyElements }); // Aggiorna l'intera istanza di Cytoscape
+      this.cy.json({ elements: cyElements });
+      console.log('cy.json() called.');
+    }));
+
+    // Sottoscrizione alle richieste di layout
+    this.subs.add(this.graphService.getLayoutRequests().subscribe(request => {
+      if (request === 'fit') {
+        setTimeout(() => {
+          console.log('Running layout adjustments...');
+          this.cy.resize();
+          this.cy.fit();
+          this.cy.center();
+          console.log('Graph resized, fitted, and centered.');
+        }, 100);
+      }
     }));
 
     // Sottoscrizione allo stato della UI per il disegno degli archi

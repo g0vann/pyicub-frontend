@@ -1,4 +1,3 @@
-
 /**
  * @file graph.service.ts
  * @description Servizio centrale per la gestione dello stato del grafo (Single Source of Truth).
@@ -6,7 +5,7 @@
  */
 
 import {inject, Injectable} from '@angular/core';
-import { BehaviorSubject, lastValueFrom, Observable } from 'rxjs';
+import { BehaviorSubject, lastValueFrom, Observable, Subject } from 'rxjs';
 import { GraphData, GraphNode, GraphEdge } from '../models/graph.model';
 import { v4 as uuid } from 'uuid';
 import {HttpClient} from "@angular/common/http";
@@ -22,6 +21,7 @@ export class GraphService {
   private http = inject(HttpClient);
 
   private readonly graphData$ = new BehaviorSubject<GraphData>({ nodes: [], edges: [] });
+  private readonly layoutRequest$ = new Subject<'fit'>();
 
   // Storico per undo/redo
   private readonly history: GraphData[] = [];
@@ -36,6 +36,10 @@ export class GraphService {
     return this.graphData$.asObservable();
   }
 
+  getLayoutRequests(): Observable<'fit'> {
+    return this.layoutRequest$.asObservable();
+  }
+
   getCurrentGraphData(): GraphData {
     return this.graphData$.getValue();
   }
@@ -43,6 +47,7 @@ export class GraphService {
   loadGraph(data: GraphData) {
     this.pushStateToHistory(this.graphData$.getValue());
     this.graphData$.next(data);
+    this.layoutRequest$.next('fit');
   }
 
   async addNode(nodeData: Partial<GraphNode>, actionType?: string) {
@@ -101,6 +106,30 @@ export class GraphService {
     }
 
     this.graphData$.next({ ...currentState, edges: [...currentState.edges, newEdge] });
+  }
+
+  removeElements(elementIds: string[]) {
+    if (!elementIds || elementIds.length === 0) {
+      return;
+    }
+    this.pushStateToHistory(this.graphData$.getValue());
+    const currentState = this.graphData$.getValue();
+    const idsToRemove = new Set(elementIds);
+
+    // Identify the full set of nodes to be removed
+    const nodesToRemove = new Set(currentState.nodes.filter(node => idsToRemove.has(node.id)).map(n => n.id));
+
+    // Filter nodes
+    const remainingNodes = currentState.nodes.filter(node => !nodesToRemove.has(node.id));
+
+    // Filter edges - remove edges that are explicitly selected OR are connected to a removed node
+    const remainingEdges = currentState.edges.filter(edge =>
+      !idsToRemove.has(edge.id) &&
+      !nodesToRemove.has(edge.source) &&
+      !nodesToRemove.has(edge.target)
+    );
+
+    this.graphData$.next({ nodes: remainingNodes, edges: remainingEdges });
   }
 
   /**
