@@ -79,9 +79,33 @@ export class Shell {
 
     const key = String(e.key || '').toLowerCase();
     if (key === 's') { e.preventDefault(); this.exportGraph(); return; }
+    if (key === 'o') { e.preventDefault(); this.fileInput.nativeElement.click(); return; }
     if (key === 'z' && e.shiftKey) { e.preventDefault(); this.graphService.redo(); return; }
     if (key === 'z') { e.preventDefault(); this.graphService.undo(); return; }
     if (key === 'y') { e.preventDefault(); this.graphService.redo(); return; }
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const graphData = JSON.parse(reader.result as string) as GraphData;
+        if (graphData && Array.isArray(graphData.nodes) && Array.isArray(graphData.edges)) {
+          this.graphService.loadGraph(graphData);
+          this.fileName = file.name || 'Grafo.json';
+        } else {
+          alert('Errore: Il file JSON non ha un formato valido.');
+        }
+      } catch (e) {
+        console.error('Errore durante il parsing del file JSON:', e);
+        alert('Errore: Il file selezionato non è un JSON valido.');
+      }
+    };
+    reader.readAsText(file);
+    input.value = '';
   }
 
   startDrag(side: 'left'|'right', ev: MouseEvent) {
