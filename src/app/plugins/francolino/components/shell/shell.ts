@@ -2,11 +2,11 @@
  * @file shell.ts
  */
 
-import { Component, inject, ViewChild, ElementRef, HostBinding, HostListener } from '@angular/core';
+import { Component, inject, ViewChild, ElementRef, HostBinding, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, map, Observable } from 'rxjs';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule }    from '@angular/material/icon';
@@ -45,8 +45,9 @@ import { ActionsService, NodeAction } from '../../services/actions';
   templateUrl: './shell.html',
   styleUrls: ['./shell.scss']
 })
-export class Shell {
+export class Shell implements OnInit {
   selectedNode: any;
+  public isGraphEmpty$!: Observable<boolean>;
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild(GraphEditor) editor!: GraphEditor;
@@ -62,6 +63,13 @@ export class Shell {
   fileName = 'Grafo.json';
   renaming = false;
   q = '';
+
+  ngOnInit(): void {
+    this.isGraphEmpty$ = this.graphService.getGraphData().pipe(
+      map(graphData => graphData.nodes.length === 0)
+    );
+  }
+
 
   private dragSide: 'left'|'right' | null = null;
   private startX = 0;
@@ -427,7 +435,7 @@ export class Shell {
     return newObj;
   }
 
-  downloadFsm() {
+  private _performDownload() {
     const { jsonString } = this._generateFsmJson({ clean: false });
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
@@ -440,17 +448,42 @@ export class Shell {
     window.URL.revokeObjectURL(url);
   }
 
+  downloadFsm() {
+    if (this.graphService.getCurrentGraphData().nodes.length === 0) {
+      alert('Il grafo è vuoto. Aggiungi almeno un nodo prima di esportare.');
+      return;
+    }
+    this._performDownload();
+  }
+
   async saveFsm() {
-    const { fsmJson } = this._generateFsmJson({ clean: true });
+    if (this.graphService.getCurrentGraphData().nodes.length === 0) {
+      alert('Il grafo è vuoto. Aggiungi almeno un nodo prima di salvare.');
+      return;
+    }
+
+    // First, download the complete FSM data locally
+    this._performDownload();
+
+    // Then, send the clean FSM data to the backend
+    const { jsonString } = this._generateFsmJson({ clean: true }); // Get the formatted string
     try {
       const backendUrl = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/icubSim/DynamicFSMServer/load_fsm`;
-      console.log(fsmJson);
-      await lastValueFrom(this.http.post(backendUrl, fsmJson));
+      console.log(JSON.parse(jsonString)); // Log the parsed object for readability in console
+      await lastValueFrom(
+        this.http.post(backendUrl, jsonString, { // Send the string
+          headers: { 'Content-Type': 'application/json' }
+        })
+      );
+
+      // Add a 500ms delay to allow the backend to process the FSM
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       this.appStateService.triggerFsmPluginReload();
-      alert('FSM salvata con successo!');
+      alert('FSM salvato sul backend e scaricato localmente con successo!');
     } catch (e) {
       console.error('Error sending FSM to backend', e);
-      alert('Errore nell\'invio della FSM al backend');
+      alert('Errore nell\'invio della FSM al backend. Il file è stato comunque scaricato localmente.');
     }
   }
 
