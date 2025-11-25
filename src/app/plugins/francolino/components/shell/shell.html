@@ -8,10 +8,10 @@
 <mat-toolbar class="secondary-toolbar">
     <!-- Azioni sinistra -->
     <div class="cluster">
-        <button mat-icon-button aria-label="Esporta" (click)="downloadFsm()" matTooltip="Esporta FSM (Ctrl+S)">
+        <button mat-icon-button aria-label="Esporta" (click)="downloadFsm()" matTooltip="Esporta FSM (Ctrl+S)" [disabled]="isGraphEmpty$ | async">
             <mat-icon>download</mat-icon>
         </button>
-        <button mat-icon-button aria-label="Salva FSM" (click)="saveFsm()" matTooltip="Salva FSM">
+        <button mat-icon-button aria-label="Salva FSM" (click)="saveFsm()" matTooltip="Salva FSM" [disabled]="isGraphEmpty$ | async">
             <mat-icon>save</mat-icon>
         </button>
 

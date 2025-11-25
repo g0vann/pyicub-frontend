@@ -3,12 +3,12 @@
  * @description Questo file definisce e fornisce le azioni disponibili nell'applicazione.
  * Le azioni sono divise in "NodeAction" (per creare nodi nel grafo) e "EdgeAction" (per definire i tipi di archi).
  * Il servizio `ActionsService` funge da repository centralizzato per queste azioni,
- * recuperando i dati da file JSON esterni.
+ * recuperando i dati da file JSON esterni e supportando l'aggiunta dinamica.
  */
 
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, shareReplay } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, Observable, shareReplay } from 'rxjs';
 import { Action } from '../models/action';
 
 /**
@@ -35,30 +35,55 @@ export interface EdgeAction {
 /**
  * @class ActionsService
  * @description Servizio Angular che recupera le definizioni delle azioni (nodi e archi) da file JSON esterni.
- * Questo approccio disaccoppia la configurazione dalla logica dell'applicazione.
+ * Questo approccio disaccoppia la configurazione dalla logica dell'applicazione e ora supporta l'aggiunta di azioni in modo dinamico.
  */
 @Injectable({ providedIn: 'root' })
 export class ActionsService {
-  // Inietta il client HTTP utilizzando la nuova funzione `inject`.
   private http = inject(HttpClient);
 
-  // Definisce i percorsi ai file JSON di configurazione.
   private nodeActionsUrl = 'assets/node-types.json';
   private edgeActionsUrl = 'assets/edge-types.json';
 
-  /**
-   * @property {Observable<NodeAction[]>} nodeActions$ - Un flusso Observable che contiene l'array delle azioni per i nodi.
-   * Utilizza `shareReplay(1)` per fare in modo che la richiesta HTTP venga eseguita una sola volta
-   * e che il risultato venga messo in cache e riproposto a tutti i sottoscrittori successivi.
-   */
-  nodeActions$: Observable<NodeAction[]> = this.http.get<NodeAction[]>(this.nodeActionsUrl).pipe(
-    shareReplay(1)
-  );
+  private nodeActionsSource = new BehaviorSubject<NodeAction[]>([]);
+  nodeActions$: Observable<NodeAction[]> = this.nodeActionsSource.asObservable();
 
-  /**
-   * @property {Observable<EdgeAction[]>} edgeActions$ - Un flusso Observable per le azioni degli archi, con lo stesso principio di caching.
-   */
   edgeActions$: Observable<EdgeAction[]> = this.http.get<EdgeAction[]>(this.edgeActionsUrl).pipe(
     shareReplay(1)
   );
+
+  constructor() {
+    this.loadInitialNodeActions();
+  }
+
+  private async loadInitialNodeActions() {
+    try {
+        const initialActions = await firstValueFrom(this.http.get<NodeAction[]>(this.nodeActionsUrl));
+        this.nodeActionsSource.next(initialActions);
+    } catch (error) {
+        console.error('Failed to load initial node actions:', error);
+        this.nodeActionsSource.next([]); // Emetti un array vuoto in caso di errore
+    }
+  }
+
+  /**
+   * @method addNodeAction
+   * @description Aggiunge una nuova azione di nodo all'elenco delle azioni disponibili.
+   * @param {NodeAction} action - L'azione da aggiungere.
+   */
+  addNodeAction(action: NodeAction) {
+    const currentActions = this.nodeActionsSource.getValue();
+    // Evita duplicati basati sul nome
+    if (!currentActions.find(a => a.name === action.name)) {
+        this.nodeActionsSource.next([...currentActions, action]);
+    }
+  }
+
+  /**
+   * @method currentNodeActions
+   * @description Getter per ottenere in modo sincrono le azioni dei nodi correnti.
+   * @returns {NodeAction[]} L'array corrente delle azioni dei nodi.
+   */
+  public get currentNodeActions(): NodeAction[] {
+    return this.nodeActionsSource.getValue();
+  }
 }
