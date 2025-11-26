@@ -9,16 +9,20 @@
     <!-- Azioni sinistra -->
     <div class="cluster">
         <button mat-icon-button aria-label="Esporta" (click)="downloadFsm()" matTooltip="Esporta FSM (Ctrl+S)" [disabled]="isGraphEmpty$ | async">
-            <mat-icon>download</mat-icon>
+            <mat-icon>save</mat-icon>
         </button>
         <button mat-icon-button aria-label="Salva FSM" (click)="saveFsm()" matTooltip="Salva FSM" [disabled]="isGraphEmpty$ | async">
-            <mat-icon>save</mat-icon>
+            <mat-icon>sync</mat-icon>
         </button>
 
         <button mat-icon-button aria-label="Importa" (click)="fileInput.click()" matTooltip="Importa (Ctrl+O)">
-            <mat-icon>folder_open</mat-icon>
+            <mat-icon>drive_folder_upload</mat-icon>
         </button>
         <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".json">
+
+        <button mat-icon-button aria-label="Carica dal server" (click)="loadFsmFromServer()" matTooltip="Carica FSM attiva dal server">
+            <mat-icon>cloud_download</mat-icon>
+        </button>
 
 
         <span class="v-divider" aria-hidden="true"></span>

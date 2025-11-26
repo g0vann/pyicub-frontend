@@ -157,14 +157,12 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
     this.currentNodeID = undefined;
     this.previousNodeID = undefined;
 
-    this.appStateService.configureApplication(this.application, this.application.args).pipe(
-      switchMap(() => {
-        return forkJoin({
-          fsm: this.getApplicationFSM(),
-          currentStateName: this.fsmGetCurrentState()
-        });
-      })
-    ).subscribe({
+    // The configureApplication call was redundant and is removed from here. 
+    // It's called from higher-level components or specifically on reset.
+    forkJoin({
+      fsm: this.getApplicationFSM(),
+      currentStateName: this.fsmGetCurrentState()
+    }).subscribe({
       next: ({fsm, currentStateName}) => {
         let inputEdges = fsm.edges.map(edge => {
           const inputEdge: InputEdge = {
@@ -327,13 +325,20 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
   }
 
   public forceResetFSM(): void {
-    this.appStateService.configureApplication(this.application, this.application.args).subscribe({
+    this.isLoading = true;
+    this.fsmGetFull().pipe(
+      switchMap(fsmData => this.fsmLoad(fsmData))
+    ).subscribe({
       next: () => {
-        this.loadFSM();
+        // Adding a small delay to allow the server to process the reset
+        setTimeout(() => {
+          this.loadFSM();
+        }, 500);
       },
       error: (err) => {
-        console.error("Error forcing FSM reset via configure:", err);
+        console.error("Error forcing FSM reset:", err);
         this.openErrorDialog("Impossibile forzare il reset della FSM.");
+        this.isLoading = false;
       }
     });
   }

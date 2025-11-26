@@ -1,0 +1,26 @@
+[
+  {
+    "id": "edge-1",
+    "name": "Linea",
+    "type": "line",
+    "icon": "horizontal_rule"
+  },
+  {
+    "id": "edge-2",
+    "name": "Tratteggiata",
+    "type": "dashed",
+    "icon": "more_horiz"
+  },
+  {
+    "id": "edge-3",
+    "name": "Freccia",
+    "type": "arrow",
+    "icon": "arrow_forward"
+  },
+  {
+    "id": "edge-4",
+    "name": "Doppia Freccia",
+    "type": "bi-arrow",
+    "icon": "compare_arrows"
+  }
+]

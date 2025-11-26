@@ -278,5 +278,12 @@ export class ApiMockService implements IApiService {
     return undefined;
   }
 
+  fsmGetFull(robotName: string, appName: string, appPort: string): Observable<any> {
+    return undefined;
+  }
+
+  fsmLoad(robotName: string, appName: string, appPort: string, fsmData: any): Observable<any> {
+    return undefined;
+  }
 }
 

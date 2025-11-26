@@ -6,7 +6,7 @@ import { Component, inject, ViewChild, ElementRef, HostBinding, HostListener, On
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { lastValueFrom, map, Observable } from 'rxjs';
+import { lastValueFrom, map, Observable, forkJoin } from 'rxjs';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule }    from '@angular/material/icon';
@@ -68,8 +68,10 @@ export class Shell implements OnInit {
     this.isGraphEmpty$ = this.graphService.getGraphData().pipe(
       map(graphData => graphData.nodes.length === 0)
     );
-  }
 
+    const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
+    this.actionsService.loadNodeActionsFromServer(robotName, "DynamicFSMServer");
+  }
 
   private dragSide: 'left'|'right' | null = null;
   private startX = 0;
@@ -90,8 +92,6 @@ export class Shell implements OnInit {
     return color;
   }
 
-
-
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
@@ -104,7 +104,6 @@ export class Shell implements OnInit {
         const fileContent = JSON.parse(reader.result as string);
         let graphData: GraphData | null = null;
 
-        // Gestione formato FSM
         if (fileContent.states && fileContent.transitions && fileContent.initial_state) {
           console.log('Detected FSM format. Processing...');
 
@@ -115,40 +114,34 @@ export class Shell implements OnInit {
 
           if (missingActions.length > 0) {
             const confirmed = window.confirm(
-              `The following actions are missing:\n- ${missingActions.join('\n- ')}\n\nDo you want to add them to the palette? They will be represented as colored squares.`
+              `The following actions are missing:\n- ${missingActions.join('\n- ')}\n\nDo you want to create them on the server? Their definitions will be extracted from the imported file.`
             );
 
             if (confirmed) {
-              missingActions.forEach(name => {
-                this.actionsService.addNodeAction({
-                  id: uuid(),
-                  name: name,
-                  icon: 'rectangle',
-                  defaultColor: this.getRandomColor()
-                });
-              });
+              const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
+              const missingActionDefinitions = missingActions.map(name => fileContent.actions[name]).filter(Boolean);
+
+              await this.createMissingActionsOnServer(missingActionDefinitions);
+              await this.actionsService.loadNodeActionsFromServer(robotName, "DynamicFSMServer");
             } else {
-              const proceed = window.confirm("Continue loading without adding actions? Nodes may not appear correctly.");
+              const proceed = window.confirm("Continue loading without creating actions? Nodes may not appear correctly.");
               if (!proceed) {
                 input.value = '';
-                return; // Annulla importazione
+                return;
               }
             }
           }
-          graphData = this.transformFsmToGraphData(fileContent);
+          graphData = await this.transformFsmToGraphData(fileContent);
 
-        // Gestione formato GraphData
         } else if (fileContent.nodes && fileContent.edges) {
           console.log('Detected GraphData format.');
           graphData = fileContent as GraphData;
 
-        // Formato non valido
         } else {
           alert('Error: The JSON file does not have a valid format.');
           return;
         }
 
-        // Caricamento del grafo se i dati sono stati generati
         if (graphData) {
           console.log('Loading graph data into service...');
           this.graphService.loadGraph(graphData);
@@ -159,7 +152,6 @@ export class Shell implements OnInit {
         console.error('Error parsing JSON file:', e);
         alert('Error: The selected file is not a valid JSON.');
       } finally {
-        // Resetta l'input per permettere di selezionare lo stesso file di nuovo
         input.value = '';
       }
     };
@@ -167,94 +159,127 @@ export class Shell implements OnInit {
     reader.readAsText(file);
   }
 
-  private transformFsmToGraphData(fsmData: any): GraphData {
-    const nodes: GraphNode[] = [];
-    const edges: GraphEdge[] = [];
-    const actionsMap = new Map(this.actionsService.currentNodeActions.map(a => [a.name, a]));
+  private async createMissingActionsOnServer(actionDefinitions: any[]): Promise<void> {
+    const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
+    const appName = 'DynamicFSMServer';
+    const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions`;
 
-    // New logic: Prioritize gui_metadata for node creation.
+    const creationObservables = actionDefinitions.map(actionDataFromFile => {
+      const actionName = actionDataFromFile.name;
+      const newActionPayload = {
+        _palette: {
+          id: uuid(),
+          name: actionName,
+          icon: 'rectangle',
+          defaultColor: this.getRandomColor()
+        },
+        _properties: {
+          description: { "label": "Description", "type": "string" },
+          offset_ms: { "label": "Offset (ms)", "type": "number", "nullable": true },
+          wait_for_steps: { "label": "Wait for Steps (comma-separated)", "type": "boolean[]" }
+        },
+        ...actionDataFromFile
+      };
+      newActionPayload.name = actionName;
+      return this.http.post(url, newActionPayload);
+    });
+
+    if (creationObservables.length > 0) {
+      await lastValueFrom(forkJoin(creationObservables));
+      console.log(`Created ${creationObservables.length} missing actions on the server.`);
+    }
+  }
+
+  private async transformFsmToGraphData(fsmData: any): Promise<GraphData> {
+    const edges: GraphEdge[] = [];
+    let nodes: GraphNode[] = [];
+
+    const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
+    const appName = 'DynamicFSMServer';
+
+    const getActionDetails = async (actionName: string): Promise<any> => {
+      if (!actionName || actionName === 'init') {
+        return null;
+      }
+      try {
+        const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions/${actionName}`;
+        return await lastValueFrom(this.http.get<any>(url));
+      } catch (e) {
+        console.warn(`Could not load action template for ${actionName} from server`, e);
+        return null;
+      }
+    };
+
     if (fsmData.gui_metadata && fsmData.gui_metadata.nodes) {
       const metadataNodes = fsmData.gui_metadata.nodes;
-      // Check if we are using the new format (keys are UUIDs, values have a 'label' property)
-      // or the old format (keys are labels, values have only 'position'). We check the 'init' node.
-      const isNewFormat = metadataNodes.init ? false : Object.values(metadataNodes).some((val: any) => val.hasOwnProperty('label'));
+      const nodePromises = Object.keys(metadataNodes).map(async (nodeId) => {
+        const nodeMeta = metadataNodes[nodeId];
+        const actionName = nodeMeta.label;
 
-      if (isNewFormat) {
-        console.log('New FSM metadata format detected. Loading nodes from metadata.');
-        for (const nodeId in metadataNodes) {
-          const nodeMeta = metadataNodes[nodeId];
-          const actionDef = actionsMap.get(nodeMeta.label);
-
-          if (nodeMeta.label === 'init') {
-            nodes.push({
-              id: nodeId,
-              label: 'Init', // Display label
-              color: '#4CAF50',
-              shape: 'ellipse',
-              position: nodeMeta.position,
-              type: 'start', // Crucial for robust edge connection
-              data: {}
-            });
-          } else {
-            nodes.push({
-              id: nodeId,
-              label: nodeMeta.label,
-              color: actionDef?.defaultColor || '#2196F3',
-              shape: actionDef?.icon || 'rectangle',
-              position: nodeMeta.position,
-              type: 'action',
-              data: this.unwrapFloats(fsmData.actions[nodeMeta.label] || {})
-            });
-          }
+        if (actionName === 'init') {
+          return { id: nodeId, label: 'Init', color: '#4CAF50', shape: 'ellipse', position: nodeMeta.position, type: 'start', data: {} } as GraphNode;
         }
-      }
+
+        const fullActionData = await getActionDetails(actionName);
+        const { _palette, _properties, ...actionData } = fullActionData || {};
+        
+        const fsmActionData = fsmData.actions ? fsmData.actions[actionName] : {};
+
+        return {
+          id: nodeId,
+          label: actionName,
+          color: _palette?.defaultColor || '#2196F3',
+          shape: _palette?.icon || 'rectangle',
+          position: nodeMeta.position,
+          type: 'action',
+          data: this.unwrapFloats(fsmActionData || actionData),
+          propertiesMetadata: _properties
+        } as GraphNode;
+      });
+
+      nodes = await Promise.all(nodePromises);
     }
     
-    // Fallback if no nodes were created from metadata (e.g. old format or missing metadata)
     if (nodes.length === 0) {
-      console.log('Old FSM format or no metadata. Falling back to loading from `states` array.');
-      
-      const initNode: GraphNode = {
-          id: uuid(), // Unique ID
-          label: 'Init',
-          color: '#4CAF50',
-          shape: 'ellipse',
-          position: { x: 400, y: 300 }, // Centered start position
-          type: 'start',
-          data: {}
-      };
+      const initNode: GraphNode = { id: uuid(), label: 'Init', color: '#4CAF50', shape: 'ellipse', position: { x: 400, y: 300 }, type: 'start', data: {} };
       nodes.push(initNode);
 
-      // Arrange other nodes in a circle around the init node
       const radius = 250;
       const totalActionNodes = fsmData.states.length;
       const angleStep = totalActionNodes > 0 ? (2 * Math.PI) / totalActionNodes : 0;
+      
+      const nodePromises = fsmData.states.map(async (state: any, index: number) => {
+        const actionName = state.name;
+        if (actionName === 'init') return null;
 
-      fsmData.states.forEach((state: any, index: number) => {
-          const actionDef = actionsMap.get(state.name);
-          const angle = angleStep * index;
-          const x = initNode.position.x + radius * Math.cos(angle);
-          const y = initNode.position.y + radius * Math.sin(angle);
+        const fullActionData = await getActionDetails(actionName);
+        const { _palette, _properties, ...actionData } = fullActionData || {};
+        const fsmActionData = fsmData.actions ? fsmData.actions[actionName] : {};
 
-          nodes.push({
-              id: uuid(), // Generate unique ID for each node
-              label: state.name,
-              color: actionDef?.defaultColor || '#2196F3',
-              shape: actionDef?.icon || 'rectangle',
-              position: { x, y },
-              type: 'action',
-              data: this.unwrapFloats(fsmData.actions[state.name] || {})
-          });
+        const angle = angleStep * index;
+        const x = initNode.position.x + radius * Math.cos(angle);
+        const y = initNode.position.y + radius * Math.sin(angle);
+
+        return {
+          id: uuid(),
+          label: actionName,
+          color: _palette?.defaultColor || '#2196F3',
+          shape: _palette?.icon || 'rectangle',
+          position: { x, y },
+          type: 'action',
+          data: this.unwrapFloats(fsmActionData || actionData),
+          propertiesMetadata: _properties
+        } as GraphNode;
       });
+
+      const newNodes = (await Promise.all(nodePromises)).filter(n => n !== null);
+      nodes.push(...newNodes);
     }
 
-    // Edge creation logic: Now more robust for the 'init' node.
-    // It remains ambiguous for duplicate action labels.
     fsmData.transitions.forEach((transition: any) => {
       let sourceNode: GraphNode | undefined;
       let targetNode: GraphNode | undefined;
 
-      // Find source node - preferentially use unique ID if available
       if (transition.source_id) {
         sourceNode = nodes.find(n => n.id === transition.source_id);
       } else if (transition.source === 'init') {
@@ -263,7 +288,6 @@ export class Shell implements OnInit {
         sourceNode = nodes.find(n => n.label === transition.source);
       }
 
-      // Find target node - preferentially use unique ID if available
       if (transition.dest_id) {
         targetNode = nodes.find(n => n.id === transition.dest_id);
       } else if (transition.dest === 'init') {
@@ -273,13 +297,7 @@ export class Shell implements OnInit {
       }
 
       if (sourceNode && targetNode) {
-        edges.push({
-          id: uuid(),
-          source: sourceNode.id,
-          target: targetNode.id,
-          type: 'arrow',
-          label: transition.trigger
-        });
+        edges.push({ id: uuid(), source: sourceNode.id, target: targetNode.id, type: 'arrow', label: transition.trigger });
       } else {
         console.warn('Could not create edge, source or target not found:', transition);
       }
@@ -315,7 +333,6 @@ export class Shell implements OnInit {
     ev.preventDefault();
   }
 
-
   private _generateFsmJson(options: { clean: boolean } = { clean: false }): { jsonString: string, fsmJson: any } {
     const graphData = this.graphService.getCurrentGraphData();
 
@@ -325,9 +342,7 @@ export class Shell implements OnInit {
       transitions: [],
       initial_state: '',
       actions: {},
-      gui_metadata: {
-        nodes: {}
-      }
+      gui_metadata: { nodes: {} }
     };
 
     for (const node of graphData.nodes) {
@@ -336,7 +351,7 @@ export class Shell implements OnInit {
         fsmJson.gui_metadata.nodes[node.id] = { label: 'init', position: node.position };
       } else if (node.type === 'action') {
         fsmJson.states.push({ name: node.label, description: node.data?.description });
-        fsmJson.actions[node.label] = JSON.parse(JSON.stringify(node.data || {})); // Deep copy
+        fsmJson.actions[node.label] = JSON.parse(JSON.stringify(node.data || {}));
         fsmJson.gui_metadata.nodes[node.id] = { label: node.label, position: node.position };
       }
     }
@@ -348,7 +363,6 @@ export class Shell implements OnInit {
         if (sourceNode && targetNode) {
             const sourceName = sourceNode.type === 'start' ? 'init' : sourceNode.label;
             const targetName = targetNode.type === 'start' ? 'init' : targetNode.label;
-
             fsmJson.transitions.push({
                 trigger: edge.label || `${sourceName}>${targetName}`,
                 source: sourceName,
@@ -359,7 +373,6 @@ export class Shell implements OnInit {
         }
     }
 
-    // If 'clean' option is true, remove all data used only for the GUI editor
     if (options.clean) {
       delete fsmJson.gui_metadata;
       if (fsmJson.transitions) {
@@ -373,25 +386,19 @@ export class Shell implements OnInit {
     const traverseAndMark = (obj: any, key = '') => {
         if (!obj) return;
         if (Array.isArray(obj)) {
-            for (let i = 0; i < obj.length; i++) {
-                if(typeof obj[i] === 'number') {
-                    if (key === 'target_joints' || key === 'checkpoints') {
-                       if (Number.isInteger(obj[i])) {
-                          obj[i] = { __float: obj[i] };
-                       }
-                    }
-                } else if (typeof obj[i] === 'object') {
-                    traverseAndMark(obj[i], key);
+            obj.forEach((item, i) => {
+                if (typeof item === 'number' && (key === 'target_joints' || key === 'checkpoints') && Number.isInteger(item)) {
+                    obj[i] = { "__float": item };
+                } else if (typeof item === 'object') {
+                    traverseAndMark(item, key);
                 }
-            }
+            });
             return;
         }
         if (typeof obj === 'object') {
             Object.entries(obj).forEach(([k, value]) => {
-                if (k === 'duration' || k === 'timeout') {
-                    if (typeof value === 'number') {
-                        obj[k] = { __float: value };
-                    }
+                if ((k === 'duration' || k === 'timeout') && typeof value === 'number') {
+                    obj[k] = { "__float": value };
                 } else {
                     traverseAndMark(value, k);
                 }
@@ -404,28 +411,16 @@ export class Shell implements OnInit {
     let jsonString = JSON.stringify(fsmJson, null, 2);
     jsonString = jsonString.replace(/{\s*"__float":\s*(-?\d+\.?\d*)\s*}/g, (match, numberStr) => {
       const num = parseFloat(numberStr);
-      if (numberStr.includes('.')) {
-        return numberStr;
-      }
-      return num.toFixed(1);
+      return numberStr.includes('.') ? numberStr : num.toFixed(1);
     });
 
     return { jsonString, fsmJson };
   }
 
   private unwrapFloats(obj: any): any {
-    if (obj === null || typeof obj !== 'object') {
-        return obj;
-    }
-
-    if (Array.isArray(obj)) {
-        return obj.map(item => this.unwrapFloats(item));
-    }
-
-    if (obj.hasOwnProperty('__float') && typeof obj.__float === 'number') {
-        return obj.__float;
-    }
-
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(item => this.unwrapFloats(item));
+    if (obj.hasOwnProperty('__float') && typeof obj.__float === 'number') return obj.__float;
     const newObj: { [key: string]: any } = {};
     for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
@@ -436,6 +431,10 @@ export class Shell implements OnInit {
   }
 
   private _performDownload() {
+    if (this.graphService.getCurrentGraphData().nodes.length === 0) {
+      alert('Il grafo è vuoto. Aggiungi almeno un nodo prima di esportare.');
+      return;
+    }
     const { jsonString } = this._generateFsmJson({ clean: false });
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
@@ -449,10 +448,6 @@ export class Shell implements OnInit {
   }
 
   downloadFsm() {
-    if (this.graphService.getCurrentGraphData().nodes.length === 0) {
-      alert('Il grafo è vuoto. Aggiungi almeno un nodo prima di esportare.');
-      return;
-    }
     this._performDownload();
   }
 
@@ -461,24 +456,15 @@ export class Shell implements OnInit {
       alert('Il grafo è vuoto. Aggiungi almeno un nodo prima di salvare.');
       return;
     }
-
-    // First, download the complete FSM data locally
     this._performDownload();
 
-    // Then, send the clean FSM data to the backend
-    const { jsonString } = this._generateFsmJson({ clean: true }); // Get the formatted string
+    const { jsonString } = this._generateFsmJson({ clean: true });
     try {
       const backendUrl = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/icubSim/DynamicFSMServer/load_fsm`;
-      console.log(JSON.parse(jsonString)); // Log the parsed object for readability in console
       await lastValueFrom(
-        this.http.post(backendUrl, jsonString, { // Send the string
-          headers: { 'Content-Type': 'application/json' }
-        })
+        this.http.post(backendUrl, jsonString, { headers: { 'Content-Type': 'application/json' } })
       );
-
-      // Add a 500ms delay to allow the backend to process the FSM
       await new Promise(resolve => setTimeout(resolve, 500));
-
       this.appStateService.triggerFsmPluginReload();
       alert('FSM salvato sul backend e scaricato localmente con successo!');
     } catch (e) {
@@ -490,10 +476,8 @@ export class Shell implements OnInit {
   @HostListener('window:keydown', ['$event'])
   onWindowKeydown(e: KeyboardEvent) {
     const t = e.target as HTMLElement | null;
-    if (t) {
-      const tag = t.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || (t instanceof HTMLElement && t.isContentEditable)) return;
-    }
+    if (t && (t.tagName?.toLowerCase() === 'input' || t.tagName?.toLowerCase() === 'textarea' || t.isContentEditable)) return;
+    
     const ctrlOrMeta = e.ctrlKey || e.metaKey;
     if (!ctrlOrMeta) return;
 
@@ -501,5 +485,31 @@ export class Shell implements OnInit {
     if (key === 's') { e.preventDefault(); this.saveFsm(); return; }
     if (key === 'z') { e.preventDefault(); this.graphService.undo(); return; }
     if (key === 'y') { e.preventDefault(); this.graphService.redo(); return; }
+  }
+
+  async loadFsmFromServer() {
+    try {
+      const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
+      const appName = 'DynamicFSMServer';
+      const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/get_full_fsm?sync`;
+      
+      // Since it's registered via __register_method__, it's a POST request.
+      const fsmData = await lastValueFrom(this.http.post<any>(url, {}));
+      
+      if (fsmData) {
+        // We can re-use the same transformation logic as file import
+        const graphData = await this.transformFsmToGraphData(fsmData);
+        if (graphData) {
+          this.graphService.loadGraph(graphData);
+          this.fileName = fsmData.name ? `${fsmData.name}.json` : 'fsm_from_server.json';
+          console.log('Successfully loaded FSM from server.');
+        }
+      } else {
+        alert('Error: Received empty FSM data from the server.');
+      }
+    } catch (e) {
+      console.error('Error loading FSM from server:', e);
+      alert('Error: Could not load FSM from the server.');
+    }
   }
 }

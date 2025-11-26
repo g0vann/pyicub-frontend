@@ -9,6 +9,7 @@ import { BehaviorSubject, lastValueFrom, Observable, Subject } from 'rxjs';
 import { GraphData, GraphNode, GraphEdge } from '../models/graph.model';
 import { v4 as uuid } from 'uuid';
 import {HttpClient} from "@angular/common/http";
+import { environment } from '../../../../environments/environment';
 
 /**
  * @class GraphService
@@ -55,13 +56,26 @@ export class GraphService {
     const currentState = this.graphData$.getValue();
 
     let actionData: any = {};
+    let propertiesMetadata: any = {};
+
     if (actionType && actionType !== 'start' && actionType !== 'end') {
       try {
-        // Fetch as text to preserve formatting
-        const actionText = await lastValueFrom(this.http.get(`assets/json/${actionType}.json`, { responseType: 'text' }));
-        actionData = JSON.parse(actionText); // still parse to work with it, export will be custom
+        // TODO: Il nome del robot e dell'app dovrebbero essere dinamici
+        const robotName = 'icubSim';
+        const appName = 'DynamicFSMServer';
+        const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions/${actionType}`;
+        
+        const fullActionData = await lastValueFrom(this.http.get<any>(url));
+        
+        // Separa i metadati dal corpo principale dell'azione
+        const { _palette, _properties, ...rest } = fullActionData;
+        
+        actionData = rest;
+        propertiesMetadata = _properties;
+
       } catch (e) {
-        console.error(`Could not load action template for ${actionType}`, e);
+        console.error(`Could not load action template for ${actionType} from server`, e);
+        // Fallback o gestione dell'errore
       }
     }
 
@@ -73,11 +87,13 @@ export class GraphService {
       position: { x: 100, y: 100 },
       ...nodeData,
       type: actionType ? (actionType === 'Init' ? 'start' : (actionType === 'End' ? 'end' : 'action')) : 'action',
-      data: actionData
+      data: actionData,
+      propertiesMetadata: propertiesMetadata // Assegna i metadati per la UI
     } as GraphNode;
 
     this.graphData$.next({ ...currentState, nodes: [...currentState.nodes, newNode] });
   }
+
 
   updateNode(nodeId: string, newProperties: Partial<GraphNode>) {
     this.pushStateToHistory(this.graphData$.getValue());

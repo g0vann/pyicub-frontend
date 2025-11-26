@@ -563,6 +563,13 @@ export class ApiService implements IApiService {
     return this.runServiceAsync(robotName, "helper", this.port, "actions.playAction", {action_id: actionID})
   }
 
+  fsmGetFull(robotName: string, appName: string, appPort: string) {
+    return this.runService<any>(robotName, appName, appPort, "get_full_fsm");
+  }
+
+  fsmLoad(robotName: string, appName: string, appPort: string, fsmData: any) {
+    return this.runService<any>(robotName, appName, appPort, "load_fsm", fsmData);
+  }
 }
 
 

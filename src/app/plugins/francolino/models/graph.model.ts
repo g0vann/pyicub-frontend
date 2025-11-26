@@ -19,6 +19,7 @@ export interface GraphNode {
   position: { x: number; y: number }; // Posizione del nodo sulla canvas
   type: 'action' | 'start' | 'end'; // Tipo di nodo
   data?: any;                  // Dati specifici dell'azione, caricati dal template JSON
+  propertiesMetadata?: any;    // Metadati per la UI del pannello delle proprietà
 }
 
 /**
