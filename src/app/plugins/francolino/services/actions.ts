@@ -1,21 +1,16 @@
-/**
- * @file actions.ts
- * @description Questo file definisce e fornisce le azioni disponibili nell'applicazione.
- * Le azioni sono divise in "NodeAction" (per creare nodi nel grafo) e "EdgeAction" (per definire i tipi di archi).
- * Il servizio `ActionsService` funge da repository centralizzato per queste azioni,
- * recuperando i dati da file JSON esterni e supportando l'aggiunta dinamica.
- */
-
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, firstValueFrom, Observable, shareReplay } from 'rxjs';
+import { BehaviorSubject, Observable, shareReplay, lastValueFrom, tap } from 'rxjs';
 import { Action } from '../models/action';
+import { environment } from '../../../../environments/environment';
 
 /**
  * @interface NodeAction
  * @description Estende l'interfaccia base `Action` per rappresentare un'azione che crea un nodo.
  */
-export interface NodeAction extends Action {}
+export interface NodeAction extends Action {
+  _properties?: any; // Metadati per la UI del pannello delle proprietà
+}
 
 /**
  * @interface EdgeAction
@@ -32,16 +27,10 @@ export interface EdgeAction {
     icon: string;
 }
 
-/**
- * @class ActionsService
- * @description Servizio Angular che recupera le definizioni delle azioni (nodi e archi) da file JSON esterni.
- * Questo approccio disaccoppia la configurazione dalla logica dell'applicazione e ora supporta l'aggiunta di azioni in modo dinamico.
- */
 @Injectable({ providedIn: 'root' })
 export class ActionsService {
   private http = inject(HttpClient);
 
-  private nodeActionsUrl = 'assets/node-types.json';
   private edgeActionsUrl = 'assets/edge-types.json';
 
   private nodeActionsSource = new BehaviorSubject<NodeAction[]>([]);
@@ -52,17 +41,33 @@ export class ActionsService {
   );
 
   constructor() {
-    this.loadInitialNodeActions();
+    // Il costruttore ora è vuoto, il caricamento è guidato dal componente
   }
 
-  private async loadInitialNodeActions() {
-    try {
-        const initialActions = await firstValueFrom(this.http.get<NodeAction[]>(this.nodeActionsUrl));
-        this.nodeActionsSource.next(initialActions);
-    } catch (error) {
-        console.error('Failed to load initial node actions:', error);
-        this.nodeActionsSource.next([]); // Emetti un array vuoto in caso di errore
-    }
+  /**
+   * @method loadNodeActionsFromServer
+   * @description Carica le azioni dei nodi da un endpoint del server e restituisce una Promise.
+   * @param robotName Il nome del robot.
+   * @param appName Il nome dell'applicazione server.
+   */
+  loadNodeActionsFromServer(robotName: string, appName: string): Promise<void> {
+    const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions`;
+    const staticInitNode: NodeAction = { id: "static-init", name: "Init", icon: "ellipse", defaultColor: "#4CAF50" };
+
+    const request$ = this.http.get<NodeAction[]>(url).pipe(
+      tap({
+        next: (actionsFromServer) => {
+          const allActions = [staticInitNode, ...actionsFromServer];
+          this.nodeActionsSource.next(allActions);
+        },
+        error: (error) => {
+          console.error('Failed to load node actions from server:', error);
+          this.nodeActionsSource.next([staticInitNode]);
+        }
+      })
+    );
+    
+    return lastValueFrom(request$, { defaultValue: undefined });
   }
 
   /**

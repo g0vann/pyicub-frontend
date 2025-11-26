@@ -219,4 +219,11 @@ export class WidgetBaseComponent {
     return this.apiService.getServices(this.application.robotName,this.application.name)
   }
 
+  fsmGetFull() {
+    return this.apiService.fsmGetFull(this.application.robotName, this.application.name, this.application.url.port);
+  }
+
+  fsmLoad(fsmData: any) {
+    return this.apiService.fsmLoad(this.application.robotName, this.application.name, this.application.url.port, fsmData);
+  }
 }

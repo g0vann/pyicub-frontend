@@ -58,6 +58,8 @@ export abstract class IApiService {
   abstract getRobotActions(robotName: string): Observable<any>;
   abstract playActionSync(robotName: string, actionID: string): Observable<any>;
   abstract playActionAsync(robotName:string, actionID: string): Observable<any>;
+  abstract fsmGetFull(robotName: string, appName: string, appPort: string): Observable<any>;
+  abstract fsmLoad(robotName: string, appName: string, appPort: string, fsmData: any): Observable<any>;
 
   constructor(){
 
