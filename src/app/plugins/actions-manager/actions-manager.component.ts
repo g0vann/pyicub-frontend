@@ -45,6 +45,8 @@ export class ActionsManagerComponent extends WidgetBaseComponent implements OnIn
       .subscribe(() => {
         this.loadActions();
       });
+
+
   }
 
   ngOnDestroy() {
