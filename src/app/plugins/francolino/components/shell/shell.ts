@@ -456,11 +456,21 @@ export class Shell implements OnInit {
       alert('Il grafo è vuoto. Aggiungi almeno un nodo prima di salvare.');
       return;
     }
-    this._performDownload();
+    // this._performDownload();
 
     const { jsonString } = this._generateFsmJson({ clean: true });
+    // const blob = new Blob([jsonString], { type: 'application/json' });
+    // const url = window.URL.createObjectURL(blob);
+    // const a = document.createElement('a');
+    // a.href = url;
+    // a.download = this.fileName || 'grafo.json';
+    // document.body.appendChild(a);
+    // a.click();
+    // document.body.removeChild(a);
+    // window.URL.revokeObjectURL(url);
+
     try {
-      const backendUrl = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/icubSim/DynamicFSMServer/load_fsm`;
+      const backendUrl = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/icubSim/DynamicFSMServer/load_fsm?sync`;
       await lastValueFrom(
         this.http.post(backendUrl, jsonString, { headers: { 'Content-Type': 'application/json' } })
       );
