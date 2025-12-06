@@ -476,7 +476,7 @@ export class Shell implements OnInit {
       );
       await new Promise(resolve => setTimeout(resolve, 500));
       this.appStateService.triggerFsmPluginReload();
-      alert('FSM salvato sul backend e scaricato localmente con successo!');
+      alert('FSM salvato sul backend con successo!');
     } catch (e) {
       console.error('Error sending FSM to backend', e);
       alert('Errore nell\'invio della FSM al backend. Il file è stato comunque scaricato localmente.');
