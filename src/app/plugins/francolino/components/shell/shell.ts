@@ -167,17 +167,6 @@ export class Shell implements OnInit {
     const creationObservables = actionDefinitions.map(actionDataFromFile => {
       const actionName = actionDataFromFile.name;
       const newActionPayload = {
-        _palette: {
-          id: uuid(),
-          name: actionName,
-          icon: 'rectangle',
-          defaultColor: this.getRandomColor()
-        },
-        _properties: {
-          description: { "label": "Description", "type": "string" },
-          offset_ms: { "label": "Offset (ms)", "type": "number", "nullable": true },
-          wait_for_steps: { "label": "Wait for Steps (comma-separated)", "type": "boolean[]" }
-        },
         ...actionDataFromFile
       };
       newActionPayload.name = actionName;
@@ -210,6 +199,16 @@ export class Shell implements OnInit {
       }
     };
 
+    const sanitizeActionData = (data: any, name: string) => {
+      if (!data || typeof data !== 'object') return data;
+      const clone = JSON.parse(JSON.stringify(data));
+      delete clone._palette;
+      delete clone._properties;
+      delete clone.id;
+      clone.name = name;
+      return clone;
+    };
+
     if (fsmData.gui_metadata && fsmData.gui_metadata.nodes) {
       const metadataNodes = fsmData.gui_metadata.nodes;
       const nodePromises = Object.keys(metadataNodes).map(async (nodeId) => {
@@ -222,18 +221,17 @@ export class Shell implements OnInit {
 
         const fullActionData = await getActionDetails(actionName);
         const { _palette, _properties, ...actionData } = fullActionData || {};
-        
+
         const fsmActionData = fsmData.actions ? fsmData.actions[actionName] : {};
 
         return {
           id: nodeId,
           label: actionName,
-          color: _palette?.defaultColor || '#2196F3',
-          shape: _palette?.icon || 'rectangle',
+          color: '#ffffff',
+          shape: 'round-rectangle',
           position: nodeMeta.position,
           type: 'action',
-          data: this.unwrapFloats(fsmActionData || actionData),
-          propertiesMetadata: _properties
+          data: sanitizeActionData(this.unwrapFloats(fsmActionData || actionData), actionName)
         } as GraphNode;
       });
 
@@ -263,12 +261,11 @@ export class Shell implements OnInit {
         return {
           id: uuid(),
           label: actionName,
-          color: _palette?.defaultColor || '#2196F3',
-          shape: _palette?.icon || 'rectangle',
+          color: '#ffffff',
+          shape: 'round-rectangle',
           position: { x, y },
           type: 'action',
-          data: this.unwrapFloats(fsmActionData || actionData),
-          propertiesMetadata: _properties
+          data: sanitizeActionData(this.unwrapFloats(fsmActionData || actionData), actionName)
         } as GraphNode;
       });
 
@@ -336,6 +333,17 @@ export class Shell implements OnInit {
   private _generateFsmJson(options: { clean: boolean } = { clean: false }): { jsonString: string, fsmJson: any } {
     const graphData = this.graphService.getCurrentGraphData();
 
+    const sanitizeActionData = (data: any, name: string) => {
+      const clone = JSON.parse(JSON.stringify(data || {}));
+      if (clone && typeof clone === 'object') {
+        delete clone._palette;
+        delete clone._properties;
+        delete clone.id;
+        clone.name = name;
+      }
+      return clone;
+    };
+
     const fsmJson: any = {
       name: 'iCubFSM',
       states: [],
@@ -351,7 +359,7 @@ export class Shell implements OnInit {
         fsmJson.gui_metadata.nodes[node.id] = { label: 'init', position: node.position };
       } else if (node.type === 'action') {
         fsmJson.states.push({ name: node.label, description: node.data?.description });
-        fsmJson.actions[node.label] = JSON.parse(JSON.stringify(node.data || {}));
+        fsmJson.actions[node.label] = sanitizeActionData(node.data, node.label);
         fsmJson.gui_metadata.nodes[node.id] = { label: node.label, position: node.position };
       }
     }

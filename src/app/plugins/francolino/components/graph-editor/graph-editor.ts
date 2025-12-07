@@ -61,11 +61,11 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     this.cy = cytoscape({
       container: this.cyContainer.nativeElement,
       style: [
-        { 
-          selector: 'node', 
-          style: { 
-            'background-color': (ele: NodeSingular) => ele.data('color'), 
-            'label': (ele: NodeSingular) => ele.data('label'), 
+        {
+          selector: 'node',
+          style: {
+            'background-color': (ele: NodeSingular) => ele.data('color'),
+            'label': (ele: NodeSingular) => ele.data('label'),
             'shape': (ele: NodeSingular) => ele.data('shape'),
             'text-valign': 'center',
             'text-halign': 'center',
@@ -73,10 +73,14 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
             'height': 35,
             'padding': '0px',
             'font-size': '12px',
-            'color': '#fff',
-            'text-wrap': 'none'
-          } 
+            'color': '#000',
+            'text-wrap': 'none',
+            'border-color': '#000',
+            'border-width': 2,
+            'border-style': 'solid'
+          }
         },
+        { selector: 'node[type = "start"]', style: { 'color': '#fff' } },
         { selector: 'edge', style: { 'width': 3, 'line-color': '#ccc', 'curve-style': 'bezier' } },
         { selector: ':selected', style: { 'border-width': 3, 'border-color': '#3f51b5' } },
         { selector: 'edge:selected', style: { 'line-color': '#3f51b5', 'source-arrow-color': '#3f51b5', 'target-arrow-color': '#3f51b5' } },
@@ -206,10 +210,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
         y: (renderedPosition.y - pan.y) / zoom
     };
 
-    let shape: string = 'ellipse';
-    if (action.icon === 'square') shape = 'rectangle';
-    else if (action.icon === 'circle') shape = 'ellipse';
-    else if (action.icon === 'rectangle' || action.icon === 'diamond') shape = action.icon;
+    let shape: string = action.name === 'Init' ? 'ellipse' : 'round-rectangle';
 
     // NOTIFICA IL SERVIZIO invece di modificare cy direttamente
     this.graphService.addNode({

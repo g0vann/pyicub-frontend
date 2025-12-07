@@ -57,7 +57,16 @@ export class ActionsService {
     const request$ = this.http.get<NodeAction[]>(url).pipe(
       tap({
         next: (actionsFromServer) => {
-          const allActions = [staticInitNode, ...actionsFromServer];
+          const mapped = actionsFromServer.map((raw: any) => {
+            const name = raw?.name || raw?._palette?.name || raw?.id || 'Action';
+            return {
+              id: name,
+              name,
+              icon: 'rectangle',
+              defaultColor: '#ffffff'
+            } as NodeAction;
+          });
+          const allActions = [staticInitNode, ...mapped];
           this.nodeActionsSource.next(allActions);
         },
         error: (error) => {
