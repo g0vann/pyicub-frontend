@@ -56,22 +56,19 @@ export class GraphService {
     const currentState = this.graphData$.getValue();
 
     let actionData: any = {};
-    let propertiesMetadata: any = {};
 
     if (actionType && actionType !== 'start' && actionType !== 'end') {
       try {
         // TODO: Il nome del robot e dell'app dovrebbero essere dinamici
         const robotName = 'icubSim';
-        const appName = 'DynamicFSMServer';
+        const appName = 'iCubRESTApp';
         const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions/${actionType}`;
         
         const fullActionData = await lastValueFrom(this.http.get<any>(url));
         
         // Separa i metadati dal corpo principale dell'azione
         const { _palette, _properties, ...rest } = fullActionData;
-        
         actionData = rest;
-        propertiesMetadata = _properties;
 
       } catch (e) {
         console.error(`Could not load action template for ${actionType} from server`, e);
@@ -79,16 +76,16 @@ export class GraphService {
       }
     }
 
+    const isInit = actionType === 'Init';
     const newNode: GraphNode = {
       id: uuid(),
       label: nodeData.label || actionType || '',
-      color: '#ccc',
-      shape: 'ellipse',
+      color: nodeData.color || (isInit ? '#4CAF50' : '#ffffff'),
+      shape: nodeData.shape || (isInit ? 'ellipse' : 'round-rectangle'),
       position: { x: 100, y: 100 },
       ...nodeData,
       type: actionType ? (actionType === 'Init' ? 'start' : (actionType === 'End' ? 'end' : 'action')) : 'action',
-      data: actionData,
-      propertiesMetadata: propertiesMetadata // Assegna i metadati per la UI
+      data: actionData
     } as GraphNode;
 
     this.graphData$.next({ ...currentState, nodes: [...currentState.nodes, newNode] });

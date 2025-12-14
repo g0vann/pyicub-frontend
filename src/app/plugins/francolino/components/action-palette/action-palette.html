@@ -1,3 +1,4 @@
+<div class="palette-wrapper" #paletteWrapper>
 <mat-accordion multi>
     <mat-expansion-panel [expanded]="true">
         <mat-expansion-panel-header>
@@ -6,13 +7,18 @@
         <div class="palette-section">
             <mat-form-field appearance="outline" class="search-bar">
                 <mat-label>Search</mat-label>
-                <input matInput>
+                <input matInput [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange($event)">
                 <mat-icon matSuffix>search</mat-icon>
             </mat-form-field>
+            <button mat-flat-button color="primary" class="import-button" (click)="triggerImportAction()">
+              <mat-icon>file_upload</mat-icon>
+              <span>Importa</span>
+            </button>
+            <input #actionFileInput type="file" accept="application/json" (change)="onActionFileSelected($event)" hidden />
             <!-- La griglia ora itera su un Observable usando la pipe async -->
-            <div class="palette-grid" *ngIf="nodeActions$ | async as nodeActions">
+            <div class="palette-grid" *ngIf="filteredNodeActions$ | async as nodeActions">
                 <div *ngFor="let action of nodeActions" class="palette-item node-item" draggable="true"
-                    (dragstart)="onDragStart($event, action)">
+                    (dragstart)="onDragStart($event, action)" (contextmenu)="onContextMenu($event, action)">
                     <div class="shape-container">
                       <div class="node-shape" [ngClass]="action.icon" [style.background]="action.defaultColor"></div>
                     </div>
@@ -34,3 +40,7 @@
         </div>
     </mat-expansion-panel>
 </mat-accordion>
+<div *ngIf="contextMenuAction" #contextMenu class="context-menu" [style.top.px]="contextMenuY" [style.left.px]="contextMenuX" (click)="$event.stopPropagation()">
+  <button mat-button color="warn" (click)="handleDeleteFromMenu()">Elimina dal server</button>
+</div>
+</div>

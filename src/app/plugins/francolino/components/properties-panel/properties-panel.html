@@ -1,55 +1,47 @@
 <div *ngIf="node; else emptyState" class="properties">
   <mat-accordion multi>
-    <mat-expansion-panel [expanded]="true">
-      <mat-expansion-panel-header>
-        <mat-panel-title>Properties</mat-panel-title>
-      </mat-expansion-panel-header>
-      <div class="property-list">
-        <mat-form-field appearance="outline">
-          <mat-label>Label</mat-label>
-          <input matInput [ngModel]="node.label" (ngModelChange)="onPropertyChange('label', $event, undefined, false)" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Colore</mat-label>
-          <input matInput type="color" [ngModel]="node.color" (ngModelChange)="onPropertyChange('color', $event, undefined, false)" />
-        </mat-form-field>
-      </div>
-    </mat-expansion-panel>
-
-    <mat-expansion-panel [expanded]="true" *ngIf="actionMetadata">
+    <mat-expansion-panel [expanded]="true" *ngIf="node?.type === 'action'">
       <mat-expansion-panel-header>
         <mat-panel-title>Action Parameters</mat-panel-title>
       </mat-expansion-panel-header>
       <div class="property-list" *ngIf="node.data">
-        <ng-container *ngFor="let param of actionMetadata | keyvalue: originalOrder">
-          <div [ngSwitch]="param.value.type" class="property-item">
+        <div class="property-item">
+          <mat-form-field appearance="outline">
+            <mat-label>Nome</mat-label>
+            <input matInput [ngModel]="formState.name" (ngModelChange)="onFieldChange('name', $event)" />
+          </mat-form-field>
+        </div>
 
-            <mat-form-field appearance="outline" *ngSwitchCase="'string'">
-              <mat-label>{{ param.value.label }}</mat-label>
-              <input matInput [ngModel]="node.data[param.key]" (ngModelChange)="onPropertyChange(param.key, $event, param.value.type, true)" />
-            </mat-form-field>
+        <div class="property-item">
+          <mat-form-field appearance="outline">
+            <mat-label>Descrizione</mat-label>
+            <input matInput [ngModel]="formState.description" (ngModelChange)="onFieldChange('description', $event)" />
+          </mat-form-field>
+        </div>
 
-            <mat-form-field appearance="outline" *ngSwitchCase="'number'">
-              <mat-label>{{ param.value.label }}</mat-label>
-              <input matInput type="number" [ngModel]="node.data[param.key]" (ngModelChange)="onPropertyChange(param.key, $event, param.value.type, true)" />
-            </mat-form-field>
+        <div class="property-item">
+          <mat-form-field appearance="outline">
+            <mat-label>Offset (ms)</mat-label>
+            <input matInput type="number" [ngModel]="formState.offset_ms" (ngModelChange)="onFieldChange('offset_ms', $event)" />
+          </mat-form-field>
+        </div>
 
-            <mat-form-field appearance="outline" *ngSwitchCase="'boolean[]'">
-              <mat-label>{{ param.value.label }}</mat-label>
-              <input matInput [ngModel]="node.data[param.key]" (ngModelChange)="onPropertyChange(param.key, $event, param.value.type, true)" />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" *ngSwitchCase="'select'">
-              <mat-label>{{ param.value.label }}</mat-label>
-              <mat-select [ngModel]="node.data[param.key]" (ngModelChange)="onPropertyChange(param.key, $event, param.value.type, true)">
-                <mat-option *ngFor="let option of param.value.options" [value]="option">
-                  {{ option }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-
+        <div class="property-item" *ngIf="stepsCount > 0">
+          <p>wait_for_steps</p>
+          <div class="checkbox-list">
+            <mat-checkbox
+              *ngFor="let checked of formState.wait_for_steps; let i = index"
+              [checked]="checked"
+              (change)="onWaitForStepToggle(i, $event.checked)">
+              Step {{ i + 1 }}
+            </mat-checkbox>
           </div>
-        </ng-container>
+        </div>
+
+        <div class="property-item">
+          <button mat-flat-button color="primary" (click)="save()">Salva</button>
+        </div>
+
       </div>
     </mat-expansion-panel>
   </mat-accordion>
