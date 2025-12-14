@@ -1,15 +1,14 @@
 Prossimi passi per l'applicazione:
 
-0. Implementare due tasti: 1. Modifica del tasto salvataggio in francolino.plugin (che oltre a scaricare il json deve fare la chiamata lod_fsm) 2. Dentro fsm.plugin u pulsante per fare il reload di se stesso
-0.1 Capire cosa fa l'Action Manager dato che non visualizzare Action1 e Action2
-0.2 
-
-
-
-1. Implementare meglio lettura del json dal graph-editor e struttura del json 
-2. trovare un modo per render compatibile il json utilizzato da fsm.plugin direttamente con il graph-editor di francolino.plugin
-3. Riprogettare francolino direttamente come figlio di fsm in modo da poter facilmente passare avanti e indietro le modifiche ai json
-4. Implementare un pulsante che da fsm lancia francolino (tipo occupando tutto lo schermo) e che una volta chiuso ripristini la griglia 
-5. CAPIRE LE NUOVE AZIONI E QUALI POTREBBERO ESSERE LE PROPPRIETÀ MODIFICABILI 
-6. Miglioramento generale della grafica
-7. Eliminare o ripensare la "lable" magari trasformandolo in un menù a tendina che ti fa cambiare il tipo di azioni    
+0. Controllo di tutti i nodi nel grafo (arco uscente/entrante)
+1. Aggiungere controlli su export FSM: oltre a controllare che ci sia INIT va verificato che sia il nodo di inzio e fine oltre a controllare la condizione descritta al punto 9
+2. Aggiungere controllo su import azione: deve verificare che sia una singola azione e con i campi che ci aspettiamo
+3. Lasciare aperto il menu archi di default
+4. Cercare di rendere più user friendly l'aggiunta degli archi
+5. Rivedere le icone/descrizioni dei pulsanti
+6. Eliminare la Title Bar
+7. Valutare: implementare la ricerca dei nodi nel graph
+8. Implementare arco su se stesso(autoarco)
+9. Implementare una sorta di Alert se ci sono due azioni uguali nel grafo
+10. Categorizzazione delle azioni
+11. Implementazione Tree View (partendo dalle transaction del json delle fsm magari) - al click dell'elemento nella treeview si evidenza il nodo nel grafo e viceversa - tree View che si aggiorna ad ogni modifica degli archi

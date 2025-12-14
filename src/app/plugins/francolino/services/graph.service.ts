@@ -61,7 +61,7 @@ export class GraphService {
       try {
         // TODO: Il nome del robot e dell'app dovrebbero essere dinamici
         const robotName = 'icubSim';
-        const appName = 'DynamicFSMServer';
+        const appName = 'iCubRESTApp';
         const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions/${actionType}`;
         
         const fullActionData = await lastValueFrom(this.http.get<any>(url));

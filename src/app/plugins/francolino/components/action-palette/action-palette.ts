@@ -152,7 +152,7 @@ export class ActionPalette {
         if (!parsed.name || typeof parsed.name !== 'string') throw new Error('Campo "name" obbligatorio');
 
         const robotName = this.appState.selectedRobot?.name || 'icubSim';
-        const appName = 'DynamicFSMServer';
+        const appName = 'iCubRESTApp';
         const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions?sync`;
 
         await lastValueFrom(this.http.post(url, parsed, { headers: { 'Content-Type': 'application/json' } }));
@@ -176,10 +176,10 @@ export class ActionPalette {
     if (!confirmed) return;
 
     const robotName = this.appState.selectedRobot?.name || 'icubSim';
-    const appName = 'DynamicFSMServer';
-    const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions/${action.name}?sync`;
+    const appName = 'iCubRESTApp';
+    const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions/${action.name}/delete`;
     try {
-      await lastValueFrom(this.http.delete(url));
+      await lastValueFrom(this.http.get(url));
       await this.actionsService.loadNodeActionsFromServer(robotName, appName);
       alert(`Azione '${action.name}' eliminata con successo.`);
     } catch (err) {

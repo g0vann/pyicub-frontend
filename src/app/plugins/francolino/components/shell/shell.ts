@@ -70,7 +70,7 @@ export class Shell implements OnInit {
     );
 
     const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
-    this.actionsService.loadNodeActionsFromServer(robotName, "DynamicFSMServer");
+    this.actionsService.loadNodeActionsFromServer(robotName, "iCubRESTApp");
   }
 
   private dragSide: 'left'|'right' | null = null;
@@ -122,7 +122,7 @@ export class Shell implements OnInit {
               const missingActionDefinitions = missingActions.map(name => fileContent.actions[name]).filter(Boolean);
 
               await this.createMissingActionsOnServer(missingActionDefinitions);
-              await this.actionsService.loadNodeActionsFromServer(robotName, "DynamicFSMServer");
+              await this.actionsService.loadNodeActionsFromServer(robotName, "iCubRESTApp");
             } else {
               const proceed = window.confirm("Continue loading without creating actions? Nodes may not appear correctly.");
               if (!proceed) {
@@ -161,7 +161,7 @@ export class Shell implements OnInit {
 
   private async createMissingActionsOnServer(actionDefinitions: any[]): Promise<void> {
     const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
-    const appName = 'DynamicFSMServer';
+    const appName = 'iCubRESTApp';
     const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions`;
 
     const creationObservables = actionDefinitions.map(actionDataFromFile => {
@@ -184,7 +184,7 @@ export class Shell implements OnInit {
     let nodes: GraphNode[] = [];
 
     const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
-    const appName = 'DynamicFSMServer';
+    const appName = 'iCubRESTApp';
 
     const getActionDetails = async (actionName: string): Promise<any> => {
       if (!actionName || actionName === 'init') {
@@ -478,7 +478,7 @@ export class Shell implements OnInit {
     // window.URL.revokeObjectURL(url);
 
     try {
-      const backendUrl = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/icubSim/DynamicFSMServer/load_fsm?sync`;
+      const backendUrl = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/icubSim/iCubRESTApp/fsm.load_fsm?sync`;
       await lastValueFrom(
         this.http.post(backendUrl, jsonString, { headers: { 'Content-Type': 'application/json' } })
       );
@@ -508,8 +508,8 @@ export class Shell implements OnInit {
   async loadFsmFromServer() {
     try {
       const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
-      const appName = 'DynamicFSMServer';
-      const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/get_full_fsm?sync`;
+      const appName = 'iCubRESTApp';
+      const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/fsm.get_full_fsm?sync`;
       
       // Since it's registered via __register_method__, it's a POST request.
       const fsmData = await lastValueFrom(this.http.post<any>(url, {}));
