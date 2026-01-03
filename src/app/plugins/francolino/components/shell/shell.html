@@ -47,14 +47,15 @@
     <span class="spacer"></span>
 
     <!-- Searchbar custom: 36px, centrata dentro la toolbar -->
-    <div class="cluster">
-        <div class="searchbar">
+    <div class="cluster" style="position: relative;">
+        <div class="searchbar" [class.has-error]="searchError">
             <mat-icon>search</mat-icon>
-            <input type="text" [(ngModel)]="q" (keydown.enter)="onSearch(q)" placeholder="Cerca" />
-            <button *ngIf="q" class="icon-btn" aria-label="Pulisci" (click)="q = ''">
+            <input type="text" [(ngModel)]="q" (keydown.enter)="onSearch(q)" (input)="searchError = ''" placeholder="Cerca" />
+            <button *ngIf="q" class="icon-btn" aria-label="Pulisci" (click)="q = ''; searchError = ''">
                 <mat-icon>close</mat-icon>
             </button>
         </div>
+        <div class="search-feedback" *ngIf="searchError">{{ searchError }}</div>
     </div>
 </mat-toolbar>
 

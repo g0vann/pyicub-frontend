@@ -63,6 +63,7 @@ export class Shell implements OnInit {
   fileName = 'Grafo.json';
   renaming = false;
   q = '';
+  searchError = '';
 
   ngOnInit(): void {
     this.isGraphEmpty$ = this.graphService.getGraphData().pipe(
@@ -80,7 +81,27 @@ export class Shell implements OnInit {
 
   startRename() { this.renaming = true; }
   stopRename()  { this.renaming = false; }
-  onSearch(q: string) { /* TODO: ricerca nel grafo */ }
+  
+  onSearch(q: string) {
+    if (!q || !q.trim()) {
+      this.searchError = '';
+      return;
+    }
+
+    const term = q.trim().toLowerCase();
+    const nodes = this.graphService.getCurrentGraphData().nodes;
+    
+    // Cerca nodo per etichetta (case insensitive)
+    const foundNode = nodes.find(n => (n.label || '').toLowerCase() === term);
+
+    if (foundNode) {
+      this.searchError = '';
+      this.graphService.focusOnNode(foundNode.id);
+    } else {
+      this.searchError = 'no state found';
+    }
+  }
+
   fitGraph() { this.editor?.fit(); }
 
   private getRandomColor(): string {

@@ -49,6 +49,11 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     }
   }
 
+  @HostListener('window:keydown.escape', ['$event'])
+  onEscapeKeyPress(event: KeyboardEvent) {
+    this.cy.nodes().removeClass('search-highlight');
+  }
+
   ngAfterViewInit() {
     this.cy = cytoscape({
       container: this.cyContainer.nativeElement,
@@ -86,6 +91,18 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
                 'loop-direction': '-45deg',    // Posizione (in alto a destra)
                 'loop-sweep': '-45deg'         // Curva più stretta e allungata
             } 
+        },
+
+        // Stile evidenziazione ricerca
+        {
+            selector: '.search-highlight',
+            style: {
+                'border-color': '#FBC02D', // Giallo Oro
+                'border-width': 4,
+                'background-color': '#FFF9C4', // Giallo chiarissimo
+                'transition-property': 'background-color, border-color, border-width',
+                'transition-duration': 300
+            } as any // Cast any per evitare errori TS su transition properties se mancano typing
         },
         
         // Stile per evidenziare il target durante il drag & connect
@@ -164,6 +181,25 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
         this.currentEdgeType = type;
         // Se cambio strumento, resetto eventuali stati di disegno
         this.resetDrawingState();
+    }));
+
+    // Sottoscrizione alla richiesta di focus (Ricerca)
+    this.subs.add(this.graphService.focusNode$.subscribe(nodeId => {
+        const node = this.cy.getElementById(nodeId);
+        if (node.nonempty()) {
+            // Rimuovi highlight precedenti
+            this.cy.nodes().removeClass('search-highlight');
+            
+            // Aggiungi highlight al nuovo nodo
+            node.addClass('search-highlight');
+
+            // Anima zoom e pan verso il nodo
+            this.cy.animate({
+                fit: { eles: node, padding: 200 }, // Padding generoso per contesto
+                duration: 500,
+                easing: 'ease-in-out-cubic'
+            } as any);
+        }
     }));
 
     this.setupManualDragToConnect();
@@ -261,8 +297,11 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
         }
     });
 
-    // Gestione deselezione (click su sfondo)
+    // Gestione deselezione (click su sfondo) e pulizia ricerca
     this.cy.on('tap', (evt) => {
+        // Rimuovi evidenziazione ricerca a qualsiasi click
+        this.cy.nodes().removeClass('search-highlight');
+
         if (evt.target === this.cy) {
             this.nodeSelect.emit(undefined);
         }

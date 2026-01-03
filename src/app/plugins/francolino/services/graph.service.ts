@@ -33,6 +33,10 @@ export class GraphService {
   public readonly canUndo$ = new BehaviorSubject<boolean>(false);
   public readonly canRedo$ = new BehaviorSubject<boolean>(false);
 
+  // Canale per richiedere il focus su un nodo specifico (es. dalla search bar)
+  private readonly focusNodeSource = new Subject<string>();
+  public readonly focusNode$ = this.focusNodeSource.asObservable();
+
   getGraphData(): Observable<GraphData> {
     return this.graphData$.asObservable();
   }
@@ -203,5 +207,9 @@ export class GraphService {
   private updateHistoryState() {
     this.canUndo$.next(this.history.length > 0);
     this.canRedo$.next(this.redoStack.length > 0);
+  }
+
+  focusOnNode(nodeId: string) {
+    this.focusNodeSource.next(nodeId);
   }
 }

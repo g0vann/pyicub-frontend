@@ -2,7 +2,7 @@ Prossimi passi per l'applicazione:
 
 
 5. Rivedere le icone/descrizioni dei pulsanti
-7. Valutare: implementare la ricerca dei nodi nel graph
+
 
 9. Implementare una sorta di Alert se ci sono due azioni uguali nel grafo
 10. Categorizzazione delle azioni
@@ -20,3 +20,4 @@ Fatto:
 
 4. Cercare di rendere più user friendly l'aggiunta degli archi (adesso c'è il drag verso gli altri nodi con la freccia sotto che fa da ghost)
 8. Implementare arco su se stesso(autoarco)
+7. Valutare: implementare la ricerca dei nodi nel graph (quando cerchi un nodo (devi scrivere il nome preciso e premere invio) lo evidenziamo e facciamo lo zoom su di esso - premere ESC per togliere l'evidenziamento)
