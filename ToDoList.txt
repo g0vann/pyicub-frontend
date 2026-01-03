@@ -1,10 +1,9 @@
 Prossimi passi per l'applicazione:
 
-4. Cercare di rendere più user friendly l'aggiunta degli archi
+
 5. Rivedere le icone/descrizioni dei pulsanti
-6. Eliminare la Title Bar
 7. Valutare: implementare la ricerca dei nodi nel graph
-8. Implementare arco su se stesso(autoarco)
+
 9. Implementare una sorta di Alert se ci sono due azioni uguali nel grafo
 10. Categorizzazione delle azioni
 11. Implementazione Tree View (partendo dalle transaction del json delle fsm magari) - al click dell'elemento nella treeview si evidenza il nodo nel grafo e viceversa - tree View che si aggiorna ad ogni modifica degli archi
@@ -17,3 +16,7 @@ Fatto:
 2. Aggiungere controllo su import azione: deve verificare che sia una singola azione e con i campi che ci aspettiamo -> validateActionStructure()
 3. Lasciare aperto il menu archi di default
 12. Aggiungere controllo su importFSMjson (già erano implementati dei controlli, potrebbero andare già bene)
+6. Eliminare la Title Bar
+
+4. Cercare di rendere più user friendly l'aggiunta degli archi (adesso c'è il drag verso gli altri nodi con la freccia sotto che fa da ghost)
+8. Implementare arco su se stesso(autoarco)

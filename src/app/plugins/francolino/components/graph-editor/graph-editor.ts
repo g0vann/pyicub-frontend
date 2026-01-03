@@ -1,9 +1,3 @@
-/**
- * @file graph-editor.ts
- * @description Definisce il componente `GraphEditor`, il cuore visivo e interattivo dell'applicazione
- * dove il grafo viene visualizzato e manipolato.
- */
-
 import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, Output, EventEmitter, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,12 +11,6 @@ import cxtmenu from 'cytoscape-cxtmenu';
 
 cytoscape.use(cxtmenu);
 
-/**
- * @class GraphEditor
- * @description Componente che renderizza un grafo interattivo utilizzando la libreria Cytoscape.js.
- * Ora agisce come un componente "dumb" (di sola visualizzazione): riceve lo stato dal GraphService
- * e invia gli eventi di interazione utente (aggiunta nodi/archi) al servizio stesso.
- */
 @Component({
   selector: 'app-graph-editor',
   standalone: true,
@@ -40,11 +28,15 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
 
   private cy!: cytoscape.Core;
   private subs = new Subscription();
-
   private currentEdgeType: EdgeType | null = null;
-  private sourceNode: NodeSingular | null = null;
 
-  // Inietta i servizi necessari
+  // Variabili per il Drag & Connect manuale
+  private isDrawingEdge = false;
+  private dragSourceNode: NodeSingular | null = null;
+  private ghostNode: NodeSingular | null = null;
+  private ghostEdge: any = null;
+  private currentHoverNode: NodeSingular | null = null;
+
   public graphState = inject(GraphStateService);
   private graphService = inject(GraphService);
 
@@ -84,12 +76,55 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
         { selector: 'edge', style: { 'width': 3, 'line-color': '#ccc', 'curve-style': 'bezier' } },
         { selector: ':selected', style: { 'border-width': 3, 'border-color': '#3f51b5' } },
         { selector: 'edge:selected', style: { 'line-color': '#3f51b5', 'source-arrow-color': '#3f51b5', 'target-arrow-color': '#3f51b5' } },
-        { selector: 'edge[type="dashed"]', style: { 'line-style': 'dashed' } },
         { selector: 'edge[type="arrow"]', style: { 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ccc' } },
-        { selector: 'edge[type="bi-arrow"]', style: { 'source-arrow-shape': 'triangle', 'source-arrow-color': '#ccc', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ccc' } },
-        { selector: '.source-node', style: { 'border-width': '3px', 'border-color': '#3f51b5', 'border-style': 'solid' } }
+        
+        // Stile specifico per i self-loops (autoarchi) per migliorare l'estetica sui rettangoli
+        { 
+            selector: 'edge:loop', 
+            style: { 
+                'control-point-step-size': 80, // Aumentato per rendere il loop più "alto"
+                'loop-direction': '-45deg',    // Posizione (in alto a destra)
+                'loop-sweep': '-45deg'         // Curva più stretta e allungata
+            } 
+        },
+        
+        // Stile per evidenziare il target durante il drag & connect
+        { 
+            selector: '.target-hover', 
+            style: { 
+                'border-width': 4, 
+                'border-color': '#3f51b5',
+                'border-style': 'double'
+            } 
+        },
+
+        // Stile per elementi fantasma (durante il trascinamento)
+        { 
+            selector: '.ghost-node', 
+            style: { 
+                'background-opacity': 0, 
+                'border-width': 0, 
+                'width': 1, 
+                'height': 1, 
+                'label': '',
+                'events': 'no'
+            } 
+        },
+        { 
+            selector: '.ghost-edge', 
+            style: { 
+                'line-style': 'dashed', 
+                'line-color': '#3f51b5', 
+                'target-arrow-shape': 'triangle', 
+                'target-arrow-color': '#3f51b5',
+                'width': 2,
+                'events': 'no'
+            } 
+        }
       ],
-      layout: { name: 'preset' }
+      layout: { name: 'preset' },
+      // Importante: permette il panning solo se non clicchi su nodi
+      boxSelectionEnabled: false, 
     });
 
     (this.cy as any).cxtmenu({
@@ -98,95 +133,170 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
         {
           content: '<span class="material-icons">delete</span> Elimina',
           contentAsHTML: true,
-          select: (ele) => {
+          select: (ele: any) => {
             this.graphService.removeElements([ele.id()]);
           }
         }
       ]
     });
 
-    // Sottoscrizione allo stato del grafo dal servizio
     this.subs.add(this.graphService.getGraphData().subscribe(graphData => {
-      console.log('GraphEditor received new graphData');
-      if (!graphData || !graphData.nodes) {
-          console.log('Received empty or invalid graphData. Skipping render.');
-          return;
-      }
+      if (!graphData || !graphData.nodes) return;
+      
       const cyElements = {
-        nodes: graphData.nodes.map(node => {
-            const { position, ...data } = node;
-            return { data, position };
-        }),
-        edges: graphData.edges.map(edge => ({ data: { ...edge } }))
+        nodes: graphData.nodes.map(node => ({ data: node, position: node.position })),
+        edges: graphData.edges.map(edge => ({ data: edge }))
       };
       this.cy.json({ elements: cyElements });
-      console.log('cy.json() called.');
     }));
 
-    // Sottoscrizione alle richieste di layout
     this.subs.add(this.graphService.getLayoutRequests().subscribe(request => {
       if (request === 'fit') {
         setTimeout(() => {
-          console.log('Running layout adjustments...');
           this.cy.resize();
           this.cy.fit();
           this.cy.center();
-          console.log('Graph resized, fitted, and centered.');
         }, 100);
       }
     }));
 
-    // Sottoscrizione allo stato della UI per il disegno degli archi
     this.subs.add(this.graphState.currentEdgeType.subscribe(type => {
         this.currentEdgeType = type;
-        this.sourceNode = null;
-        this.cy.nodes().removeClass('source-node');
+        // Se cambio strumento, resetto eventuali stati di disegno
+        this.resetDrawingState();
     }));
 
-    // Gestione eventi di Cytoscape
-    this.setupCytoscapeEventHandlers();
-    setTimeout(() => {
-      this.cy.resize();
-      this.cy.fit();
-    }, 50);
+    this.setupManualDragToConnect();
   }
 
   /**
-   * @method setupCytoscapeEventHandlers
-   * @description Imposta tutti gli handler per gli eventi generati da Cytoscape (es. tap su un nodo).
+   * Implementazione manuale "Drag & Connect"
    */
-  private setupCytoscapeEventHandlers() {
-    this.cy.on('tap', 'node', (event) => {
-        const tappedNode = event.target;
+  private setupManualDragToConnect() {
+    // 1. Inizio trascinamento (TAPSTART su NODO)
+    this.cy.on('tapstart', 'node', (evt) => {
+        const node = evt.target;
+        
+        // Se ho un arco selezionato, inizio il disegno invece di spostare il nodo
+        if (this.currentEdgeType) {
+            this.isDrawingEdge = true;
+            this.dragSourceNode = node;
+            
+            // Blocca il nodo per non spostarlo
+            node.ungrabify(); 
 
-        if (!this.currentEdgeType) {
-            this.nodeSelect.emit(tappedNode.data());
-            return;
-        }
+            // Crea nodo fantasma alla posizione del mouse (inizialmente sopra il source)
+            const pos = evt.position;
+            this.ghostNode = this.cy.add({
+                group: 'nodes',
+                classes: 'ghost-node',
+                position: { x: pos.x, y: pos.y },
+                data: { id: 'ghost_node_temp' }
+            });
 
-        if (!this.sourceNode) {
-            this.sourceNode = tappedNode;
-            tappedNode.addClass('source-node');
+            // Crea arco fantasma dal source al ghost
+            this.ghostEdge = this.cy.add({
+                group: 'edges',
+                classes: 'ghost-edge',
+                data: { 
+                    source: node.id(), 
+                    target: this.ghostNode.id(),
+                    id: 'ghost_edge_temp'
+                }
+            });
         } else {
-            if (this.sourceNode.id() !== tappedNode.id()) {
-                // NOTIFICA IL SERVIZIO invece di modificare cy direttamente
-                this.graphService.addEdge({ source: this.sourceNode.id(), target: tappedNode.id(), type: this.currentEdgeType });
-            }
-            this.sourceNode.removeClass('source-node');
-            this.sourceNode = null;
-            this.graphState.setEdgeType(null);
+            // Comportamento standard: seleziona il nodo
+            this.nodeSelect.emit(node.data());
         }
     });
 
-    this.cy.on('unselect', 'node', () => {
-        this.nodeSelect.emit(undefined);
+    // 2. Movimento mouse (MOUSEMOVE su tutto il container)
+    this.cy.on('mousemove', (evt) => {
+        if (this.isDrawingEdge && this.ghostNode) {
+            const pos = evt.position;
+            this.ghostNode.position(pos);
+
+            // Hit Testing Manuale
+            // Troviamo il nodo sotto il cursore verificando le bounding box
+            // Escludiamo solo il nodo fantasma
+            const hoverNode = this.cy.nodes().filter(n => {
+                if (n.id() === 'ghost_node_temp') return false;
+                const bb = n.boundingBox();
+                return pos.x >= bb.x1 && pos.x <= bb.x2 && pos.y >= bb.y1 && pos.y <= bb.y2;
+            }).first() as NodeSingular;
+
+            // Gestione classe highlight
+            if (hoverNode && hoverNode.length > 0) {
+                if (this.currentHoverNode?.id() !== hoverNode.id()) {
+                    // Cambio nodo: pulisci vecchio, evidenzia nuovo
+                    if (this.currentHoverNode) this.currentHoverNode.removeClass('target-hover');
+                    hoverNode.addClass('target-hover');
+                    this.currentHoverNode = hoverNode;
+                }
+            } else {
+                // Nessun nodo sotto: pulisci se c'era
+                if (this.currentHoverNode) {
+                    this.currentHoverNode.removeClass('target-hover');
+                    this.currentHoverNode = null;
+                }
+            }
+        }
     });
+
+    // 3. Rilascio (TAPEND su tutto il container)
+    this.cy.on('tapend', (evt) => {
+        if (this.isDrawingEdge) {
+            // Usiamo il nodo calcolato nel mousemove come target affidabile
+            const targetNode = this.currentHoverNode;
+
+            if (targetNode && targetNode.id() !== 'ghost_node_temp') {
+                this.graphService.addEdge({
+                    source: this.dragSourceNode!.id(),
+                    target: targetNode.id(),
+                    type: this.currentEdgeType!
+                });
+            }
+
+            this.resetDrawingState();
+        }
+    });
+
+    // Gestione deselezione (click su sfondo)
+    this.cy.on('tap', (evt) => {
+        if (evt.target === this.cy) {
+            this.nodeSelect.emit(undefined);
+        }
+    });
+  }
+
+  private resetDrawingState() {
+      this.isDrawingEdge = false;
+      
+      // Rimuovi evidenziazione da tutti i nodi
+      this.cy.nodes().removeClass('target-hover');
+      this.currentHoverNode = null;
+
+      // Rimuovi elementi fantasma
+      if (this.ghostEdge) this.cy.remove(this.ghostEdge);
+      if (this.ghostNode) this.cy.remove(this.ghostNode);
+      
+      this.ghostEdge = null;
+      this.ghostNode = null;
+
+      // Sblocca il nodo sorgente se esiste
+      if (this.dragSourceNode) {
+          try {
+            this.dragSourceNode.grabify();
+          } catch(e) { /* Nodo potrebbe essere stato rimosso */ }
+          this.dragSourceNode = null;
+      }
   }
 
   ngOnDestroy() {
       this.subs.unsubscribe();
   }
 
+  // ... Drag & Drop da Palette (invariato) ...
   onDragOver(event: DragEvent) {
     event.preventDefault();
     event.dataTransfer!.effectAllowed = 'copy';
@@ -196,28 +306,20 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     event.preventDefault();
     const action = JSON.parse(event.dataTransfer!.getData('application/json')) as Action;
     const wrapperRect = this.cyContainer.nativeElement.getBoundingClientRect();
-    const renderedPosition = {
-        x: event.clientX - wrapperRect.left,
-        y: event.clientY - wrapperRect.top
-    };
-
+    
+    // Calcola posizione corretta tenendo conto di pan e zoom
     const pan = this.cy.pan();
     const zoom = this.cy.zoom();
-
-    // Convert rendered position to model position
-    const position = {
-        x: (renderedPosition.x - pan.x) / zoom,
-        y: (renderedPosition.y - pan.y) / zoom
-    };
+    const x = (event.clientX - wrapperRect.left - pan.x) / zoom;
+    const y = (event.clientY - wrapperRect.top - pan.y) / zoom;
 
     let shape: string = action.name === 'Init' ? 'ellipse' : 'round-rectangle';
 
-    // NOTIFICA IL SERVIZIO invece di modificare cy direttamente
     this.graphService.addNode({
       label: action.name,
       color: action.defaultColor,
       shape: shape,
-      position: position,
+      position: { x, y },
     }, action.name);
   }
 
