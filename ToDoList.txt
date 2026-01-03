@@ -1,9 +1,5 @@
 Prossimi passi per l'applicazione:
 
-0. Controllo di tutti i nodi nel grafo (arco uscente/entrante)
-1. Aggiungere controlli su export FSM: oltre a controllare che ci sia INIT va verificato che sia il nodo di inzio e fine oltre a controllare la condizione descritta al punto 9
-2. Aggiungere controllo su import azione: deve verificare che sia una singola azione e con i campi che ci aspettiamo
-3. Lasciare aperto il menu archi di default
 4. Cercare di rendere più user friendly l'aggiunta degli archi
 5. Rivedere le icone/descrizioni dei pulsanti
 6. Eliminare la Title Bar
@@ -12,3 +8,12 @@ Prossimi passi per l'applicazione:
 9. Implementare una sorta di Alert se ci sono due azioni uguali nel grafo
 10. Categorizzazione delle azioni
 11. Implementazione Tree View (partendo dalle transaction del json delle fsm magari) - al click dell'elemento nella treeview si evidenza il nodo nel grafo e viceversa - tree View che si aggiorna ad ogni modifica degli archi
+
+
+
+Fatto:
+0. Controllo di tutti i nodi nel grafo (arco uscente/entrante)
+1. Aggiungere controlli validateGraph() su saveFSM() e _performDownload(): oltre a controllare che ci sia INIT va verificato che sia il nodo di inzio e fine oltre a controllare la condizione descritta al punto 9 (condizione 9 non verificata al momento)
+2. Aggiungere controllo su import azione: deve verificare che sia una singola azione e con i campi che ci aspettiamo -> validateActionStructure()
+3. Lasciare aperto il menu archi di default
+12. Aggiungere controllo su importFSMjson (già erano implementati dei controlli, potrebbero andare già bene)

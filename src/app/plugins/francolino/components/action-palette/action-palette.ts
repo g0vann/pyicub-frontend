@@ -148,8 +148,13 @@ export class ActionPalette {
     reader.onload = async () => {
       try {
         const parsed = JSON.parse(reader.result as string);
-        if (!parsed || typeof parsed !== 'object') throw new Error('Formato non valido');
-        if (!parsed.name || typeof parsed.name !== 'string') throw new Error('Campo "name" obbligatorio');
+        
+        // Esegui validazione strutturale semplificata (Top-Level Strict)
+        const validationErrors = this.validateActionStructure(parsed);
+        if (validationErrors.length > 0) {
+          alert('Il file selezionato non è valido:\n\n- ' + validationErrors.join('\n- '));
+          return;
+        }
 
         const robotName = this.appState.selectedRobot?.name || 'icubSim';
         const appName = 'iCubRESTApp';
@@ -160,13 +165,64 @@ export class ActionPalette {
         alert('Azione importata e salvata con successo.');
       } catch (err) {
         console.error('Errore importazione azione', err);
-        alert('Errore durante l\'importazione dell\'azione. Verifica il JSON.');
+        if (err instanceof SyntaxError) {
+          alert('Errore: Il file non è un JSON valido.');
+        } else {
+          alert('Errore durante il salvataggio dell\'azione sul server.');
+        }
       } finally {
         input.value = '';
       }
     };
 
     reader.readAsText(file);
+  }
+
+  /**
+   * Verifica che l'oggetto importato rispetti rigorosamente lo schema Top-Level.
+   * Controlla campi obbligatori, tipi e assenza di campi sconosciuti.
+   */
+  private validateActionStructure(data: any): string[] {
+    const errors: string[] = [];
+    const allowedKeys = new Set(['name', 'description', 'offset_ms', 'steps', 'wait_for_steps']);
+
+    // 1. Controllo Tipo Oggetto (No Array, No Null)
+    if (Array.isArray(data)) {
+      return ['Il file contiene una lista (array). È consentito importare una sola azione alla volta (singolo oggetto).'];
+    }
+    if (!data || typeof data !== 'object') {
+      return ['Il contenuto non è un oggetto JSON valido.'];
+    }
+
+    // 2. Controllo Campi Sconosciuti (Strict Schema)
+    const keys = Object.keys(data);
+    const unknownKeys = keys.filter(k => !allowedKeys.has(k));
+    if (unknownKeys.length > 0) {
+      errors.push(`Rilevati campi non permessi: ${unknownKeys.join(', ')}. Le uniche chiavi ammesse sono: name, description, offset_ms, steps, wait_for_steps.`);
+    }
+
+    // 3. Controllo Campi Obbligatori e Tipi
+    if (typeof data.name !== 'string' || !data.name.trim()) {
+      errors.push('Il campo "name" è obbligatorio e deve essere una stringa.');
+    }
+
+    if (data.description !== null && typeof data.description !== 'string') {
+      errors.push('Il campo "description" deve essere una stringa oppure null.');
+    }
+
+    if (data.offset_ms !== null && typeof data.offset_ms !== 'number') {
+      errors.push('Il campo "offset_ms" deve essere un numero oppure null.');
+    }
+
+    if (!Array.isArray(data.steps)) {
+      errors.push('Il campo "steps" è obbligatorio e deve essere un array.');
+    }
+
+    if (!Array.isArray(data.wait_for_steps)) {
+      errors.push('Il campo "wait_for_steps" è obbligatorio e deve essere un array.');
+    }
+
+    return errors;
   }
 
   async deleteAction(action: NodeAction) {

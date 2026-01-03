@@ -438,9 +438,98 @@ export class Shell implements OnInit {
     return newObj;
   }
 
+  private validateGraph(): string[] {
+    const { nodes, edges } = this.graphService.getCurrentGraphData();
+    const errors: string[] = [];
+
+    // 1. Controllo grafo vuoto
+    if (nodes.length === 0) {
+      return ['Il grafo è vuoto.'];
+    }
+
+    // 2. Controllo esistenza Init
+    const initNode = nodes.find(n => n.type === 'start');
+    if (!initNode) {
+      return ['Manca il nodo "Init". È obbligatorio per definire l\'inizio e la fine del ciclo.'];
+    }
+
+    // 3. Controllo specifico Init: Esattamente 1 IN e 1 OUT
+    const initInCount = edges.filter(e => e.target === initNode.id).length;
+    const initOutCount = edges.filter(e => e.source === initNode.id).length;
+
+    if (initInCount !== 1) {
+      errors.push(`Il nodo "Init" deve avere ESATTAMENTE un arco in entrata (ne ha ${initInCount}). Il grafo deve chiudersi univocamente su Init.`);
+    }
+    if (initOutCount !== 1) {
+      errors.push(`Il nodo "Init" deve avere ESATTAMENTE un arco in uscita (ne ha ${initOutCount}).`);
+    }
+
+    // --- Ora bisogna verificare la raggiungibilità e la chiusura del grafo, ovvero che INIT sia il primo e ultimo nodo e che non ci siano diramazioni del grafo che non terminano in INIT ---
+    // Costruzione liste di adiacenza per algoritmi di visita
+    const adj = new Map<string, string[]>();    // Grafo normale
+    const revAdj = new Map<string, string[]>(); // Grafo inverso (archi girati)
+
+    nodes.forEach(n => {
+      adj.set(n.id, []);
+      revAdj.set(n.id, []);
+    });
+
+    edges.forEach(e => {
+      // Nota: e.source e e.target potrebbero riferirsi a nodi non più esistenti se c'è bug di sync,
+      // quindi controlliamo che esistano nelle map
+      if (adj.has(e.source) && adj.has(e.target)) {
+        adj.get(e.source)?.push(e.target);
+        revAdj.get(e.target)?.push(e.source);
+      }
+    });
+
+    // Helper per BFS (Visita in ampiezza)
+    const bfs = (startNodeId: string, graph: Map<string, string[]>): Set<string> => {
+      const visited = new Set<string>();
+      const queue = [startNodeId];
+      visited.add(startNodeId);
+
+      while (queue.length > 0) {
+        const u = queue.shift()!;
+        const neighbors = graph.get(u) || [];
+        for (const v of neighbors) {
+          if (!visited.has(v)) {
+            visited.add(v);
+            queue.push(v);
+          }
+        }
+      }
+      return visited;
+    };
+
+    // 4. Analisi Raggiungibilità
+    // Insieme dei nodi raggiungibili partendo da Init
+    const reachableFromInit = bfs(initNode.id, adj);
+    
+    // Insieme dei nodi che possono raggiungere Init (BFS sul grafo inverso partendo da Init)
+    const canReachInit = bfs(initNode.id, revAdj);
+
+    // 5. Verifica "Chiusura" e "Isole"
+    nodes.forEach(node => {
+      // A. Nodo Isola (non raggiungibile da Init)
+      if (!reachableFromInit.has(node.id)) {
+        // Init è sempre raggiungibile da sé stesso, quindi questo colpisce gli altri
+        errors.push(`Il nodo "${node.label}" non è collegato al flusso principale (non raggiungibile da Init).`);
+      } else {
+        // B. Vicolo cieco o Loop infinito (raggiungibile DA Init, ma non può tornare A Init)
+        if (!canReachInit.has(node.id)) {
+           errors.push(`Il nodo "${node.label}" rompe il ciclo: è possibile raggiungerlo, ma da lì non si può tornare a Init.`);
+        }
+      }
+    });
+
+    return errors;
+  }
+
   private _performDownload() {
-    if (this.graphService.getCurrentGraphData().nodes.length === 0) {
-      alert('Il grafo è vuoto. Aggiungi almeno un nodo prima di esportare.');
+    const errors = this.validateGraph();
+    if (errors.length > 0) {
+      alert('Impossibile esportare il grafo:\n\n- ' + errors.join('\n- '));
       return;
     }
     const { jsonString } = this._generateFsmJson({ clean: false });
@@ -460,8 +549,9 @@ export class Shell implements OnInit {
   }
 
   async saveFsm() {
-    if (this.graphService.getCurrentGraphData().nodes.length === 0) {
-      alert('Il grafo è vuoto. Aggiungi almeno un nodo prima di salvare.');
+    const errors = this.validateGraph();
+    if (errors.length > 0) {
+      alert('Impossibile salvare il grafo:\n\n- ' + errors.join('\n- '));
       return;
     }
     // this._performDownload();
