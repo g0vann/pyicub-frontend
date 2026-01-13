@@ -2,6 +2,7 @@ import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, Output, Eve
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subscription } from 'rxjs';
 import { Action } from '../../models/action';
 import { GraphStateService, EdgeType } from '../../services/graph-state';
@@ -14,7 +15,7 @@ cytoscape.use(cxtmenu);
 @Component({
   selector: 'app-graph-editor',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatSnackBarModule],
   templateUrl: './graph-editor.html',
   styleUrls: ['./graph-editor.scss'],
   host: {
@@ -39,6 +40,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
 
   public graphState = inject(GraphStateService);
   private graphService = inject(GraphService);
+  private snackBar = inject(MatSnackBar);
 
   @HostListener('window:keydown.delete', ['$event'])
   onDeleteKeyPress(event: KeyboardEvent) {
@@ -354,12 +356,35 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
 
     let shape: string = action.name === 'Init' ? 'ellipse' : 'round-rectangle';
 
+    // Generazione Nome Univoco
+    let uniqueName = action.name;
+    const existingNodes = this.graphService.getCurrentGraphData().nodes;
+    
+    // Controlla se il nome base esiste già
+    const baseNameExists = existingNodes.some(n => n.label === uniqueName);
+
+    if (baseNameExists) {
+        let suffix = 1;
+        while (existingNodes.some(n => n.label === `${uniqueName}${suffix}`)) {
+            suffix++;
+        }
+        uniqueName = `${uniqueName}${suffix}`;
+    }
+
+    if (uniqueName !== action.name) {
+      this.snackBar.open(`Nome duplicato! Il nodo è stato rinominato in "${uniqueName}"`, 'OK', {
+        duration: 4000,
+        verticalPosition: 'top',
+        horizontalPosition: 'center'
+      });
+    }
+
     this.graphService.addNode({
-      label: action.name,
+      label: uniqueName,
       color: action.defaultColor,
       shape: shape,
       position: { x, y },
-    }, action.name);
+    }, action.name); // action.name originale serve per fetchare il template corretto dal server
   }
 
   zoomIn() { this.cy.zoom(this.cy.zoom() * 1.2); }

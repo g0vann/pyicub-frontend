@@ -156,6 +156,26 @@ export class ActionPalette {
           return;
         }
 
+        // Controllo univocità nome azione
+        let actionName = parsed.name;
+        const existingActions = this.actionsService.currentNodeActions;
+
+        while (existingActions.some(a => a.name === actionName)) {
+            const userInput = prompt(`L'azione '${actionName}' è già presente nella palette.\n\nInserisci un nuovo nome per importarla (es. ${actionName}_v2), oppure premi Annulla per interrompere.`);
+            
+            if (userInput === null) {
+                // Utente ha premuto Annulla
+                input.value = '';
+                return;
+            }
+            
+            const trimmed = userInput.trim();
+            if (trimmed) {
+                actionName = trimmed;
+            }
+        }
+        parsed.name = actionName;
+
         const robotName = this.appState.selectedRobot?.name || 'icubSim';
         const appName = 'iCubRESTApp';
         const url = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/${robotName}/${appName}/actions?sync`;

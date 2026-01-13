@@ -3,9 +3,6 @@ Prossimi passi per l'applicazione:
 
 5. Rivedere le icone/descrizioni dei pulsanti
 11. Implementazione Tree View (partendo dalle transaction del json delle fsm magari) - al click dell'elemento nella treeview si evidenza il nodo nel grafo e viceversa - tree View che si aggiorna ad ogni modifica degli archi
-9. Implementare una sorta di Alert se ci sono due azioni uguali nel grafo (Al momento del drop fare un controllo sui nomi dei nodi già esistenti, se esiste un nodo con lo stesso nome chiedi se si vuole proseguire e sostituiscilo con lo stesso nome 
-    un indice progressivo)
-13. Fare la stessa cosa del punto n.9 quando importo nuove azioni (nuovi json)
 
 
 10. Categorizzazione delle azioni
@@ -23,6 +20,8 @@ Fatto:
 4. Cercare di rendere più user friendly l'aggiunta degli archi (adesso c'è il drag verso gli altri nodi con la freccia sotto che fa da ghost)
 8. Implementare arco su se stesso(autoarco)
 7. Valutare: implementare la ricerca dei nodi nel graph (quando cerchi un nodo (devi scrivere il nome preciso e premere invio) lo evidenziamo e facciamo lo zoom su di esso - premere ESC per togliere l'evidenziamento)
+9. Implementare una sorta di Alert se ci sono due azioni uguali nel grafo (Al momento del drop fare un controllo sui nomi dei nodi già esistenti, se esiste un nodo con lo stesso nome chiedi se si vuole proseguire e sostituiscilo con lo stesso nome un indice progressivo)
+13. Fare la stessa cosa del punto n.9 quando importo nuove azioni (nuovi json)
 
 
 

@@ -73,6 +73,11 @@ export class GraphService {
         // Separa i metadati dal corpo principale dell'azione
         const { _palette, _properties, ...rest } = fullActionData;
         actionData = rest;
+        
+        // Se abbiamo definito una label specifica (es. per univocità), aggiorniamo anche il nome nel payload dati
+        if (nodeData.label) {
+          actionData.name = nodeData.label;
+        }
 
       } catch (e) {
         console.error(`Could not load action template for ${actionType} from server`, e);

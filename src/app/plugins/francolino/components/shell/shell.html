@@ -1,22 +1,20 @@
 <mat-toolbar class="secondary-toolbar">
     <!-- Azioni sinistra -->
     <div class="cluster">
-        <button mat-icon-button aria-label="Esporta" (click)="downloadFsm()" matTooltip="Esporta FSM (Ctrl+S)" [disabled]="isGraphEmpty$ | async">
+        <button mat-icon-button aria-label="Salva FSM" (click)="saveFsm()" matTooltip="Salva sul Robot (Ctrl+S)" [disabled]="isGraphEmpty$ | async">
             <mat-icon>save</mat-icon>
         </button>
-        <button mat-icon-button aria-label="Salva FSM" (click)="saveFsm()" matTooltip="Salva FSM" [disabled]="isGraphEmpty$ | async">
-            <mat-icon>sync</mat-icon>
-        </button>
-
-        <button mat-icon-button aria-label="Importa" (click)="fileInput.click()" matTooltip="Importa (Ctrl+O)">
-            <mat-icon>drive_folder_upload</mat-icon>
+        <button mat-icon-button aria-label="Importa" (click)="fileInput.click()" matTooltip="Importa FSM (Ctrl+O)">
+            <mat-icon>file_upload</mat-icon>
         </button>
         <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".json">
 
-        <button mat-icon-button aria-label="Carica dal server" (click)="loadFsmFromServer()" matTooltip="Carica FSM attiva dal server">
+        <button mat-icon-button aria-label="Carica dal server" (click)="loadFsmFromServer()" matTooltip="Ricarica stato dal Robot">
             <mat-icon>cloud_download</mat-icon>
         </button>
-
+        <button mat-icon-button aria-label="Esporta" (click)="downloadFsm()" matTooltip="Esporta file JSON " [disabled]="isGraphEmpty$ | async">
+            <mat-icon>file_download</mat-icon>
+        </button>
 
         <span class="v-divider" aria-hidden="true"></span>
 
