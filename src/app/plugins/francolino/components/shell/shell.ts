@@ -16,6 +16,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ActionPalette }    from '../action-palette/action-palette';
 import { PropertiesPanel }  from '../properties-panel/properties-panel';
+import { TreeViewPanel }    from '../tree-view-panel/tree-view-panel';
 import { GraphService }     from '../../services/graph.service';
 import { GraphData, GraphEdge, GraphNode } from '../../models/graph.model';
 import { GraphEditor }      from '../graph-editor/graph-editor';
@@ -39,6 +40,7 @@ import { ActionsService, NodeAction } from '../../services/actions';
     // App
     ActionPalette,
     PropertiesPanel,
+    TreeViewPanel,
     GraphEditor,
     HttpClientModule
   ],

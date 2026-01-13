@@ -1,0 +1,45 @@
+<div class="tree-container">
+    <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
+      <!-- Leaf Node -->
+      <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding [matTreeNodePaddingIndent]="15">
+        <!-- Button to toggle expand is hidden for leaves but keeps spacing consistent if needed, 
+             but here we just want a clean line -->
+        
+        <div class="node-content" 
+             [class.ref-node]="node.type === 'ref'" 
+             (click)="onNodeClick(node)"
+             [matTooltip]="node.name"
+             matTooltipPosition="right">
+          
+          <!-- Icon Logic -->
+          <mat-icon class="type-icon icon-init" *ngIf="node.type === 'init'">play_circle_filled</mat-icon>
+          <mat-icon class="type-icon icon-action" *ngIf="node.type === 'action'">rectangle</mat-icon>
+          <mat-icon class="type-icon icon-ref" *ngIf="node.type === 'ref'">reply</mat-icon>
+
+          <span class="label">{{ node.name }}</span>
+        </div>
+      </mat-tree-node>
+  
+      <!-- Expandable Node -->
+      <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding [matTreeNodePaddingIndent]="15">
+        <div class="node-content expandable" 
+             [class.folder-node]="node.type === 'folder'"
+             (click)="node.type === 'folder' ? null : onNodeClick(node)">
+             
+          <button mat-icon-button matTreeNodeToggle
+                  [attr.aria-label]="'Toggle ' + node.name">
+            <mat-icon class="mat-icon-rtl-mirror">
+              {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+            </mat-icon>
+          </button>
+  
+          <!-- Icon Logic for Parents -->
+          <mat-icon class="type-icon icon-init" *ngIf="node.type === 'init'">play_circle_filled</mat-icon>
+          <mat-icon class="type-icon icon-action" *ngIf="node.type === 'action'">dns</mat-icon> <!-- dns indicates it has children -->
+          <mat-icon class="type-icon icon-folder" *ngIf="node.type === 'folder'">warning</mat-icon>
+  
+          <span class="label">{{ node.name }}</span>
+        </div>
+      </mat-tree-node>
+    </mat-tree>
+  </div>

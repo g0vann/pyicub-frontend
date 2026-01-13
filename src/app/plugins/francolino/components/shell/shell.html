@@ -1,20 +1,26 @@
 <mat-toolbar class="secondary-toolbar">
     <!-- Azioni sinistra -->
     <div class="cluster">
-        <button mat-icon-button aria-label="Salva FSM" (click)="saveFsm()" matTooltip="Salva sul Robot (Ctrl+S)" [disabled]="isGraphEmpty$ | async">
+        <!-- GRUPPO 1: Azioni Server (Principali) -->
+        <button mat-icon-button aria-label="Salva sul Robot" (click)="saveFsm()" matTooltip="Salva sul Robot (Ctrl+S)" [disabled]="isGraphEmpty$ | async">
             <mat-icon>save</mat-icon>
         </button>
-        <button mat-icon-button aria-label="Importa" (click)="fileInput.click()" matTooltip="Importa FSM (Ctrl+O)">
+
+        <button mat-icon-button aria-label="Ricarica dal Robot" (click)="loadFsmFromServer()" matTooltip="Ricarica stato dal Robot">
+            <mat-icon>cloud_download</mat-icon>
+        </button>
+
+        <span class="v-divider" aria-hidden="true"></span>
+
+        <!-- GRUPPO 2: Azioni File Locale -->
+        <button mat-icon-button aria-label="Esporta JSON" (click)="downloadFsm()" matTooltip="Esporta file JSON" [disabled]="isGraphEmpty$ | async">
+            <mat-icon>file_download</mat-icon>
+        </button>
+
+        <button mat-icon-button aria-label="Importa JSON" (click)="fileInput.click()" matTooltip="Importa file JSON">
             <mat-icon>file_upload</mat-icon>
         </button>
         <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".json">
-
-        <button mat-icon-button aria-label="Carica dal server" (click)="loadFsmFromServer()" matTooltip="Ricarica stato dal Robot">
-            <mat-icon>cloud_download</mat-icon>
-        </button>
-        <button mat-icon-button aria-label="Esporta" (click)="downloadFsm()" matTooltip="Esporta file JSON " [disabled]="isGraphEmpty$ | async">
-            <mat-icon>file_download</mat-icon>
-        </button>
 
         <span class="v-divider" aria-hidden="true"></span>
 
@@ -76,9 +82,19 @@
         <div class="gutter" (mousedown)="startDrag('right', $event)" matTooltip="Ridimensiona"
             matTooltipPosition="left"></div>
 
-        <aside class="panel right">
-            <div class="scroll">
-                <app-properties-panel [node]="selectedNode"></app-properties-panel>
+        <aside class="panel right" style="background: transparent; border: none; box-shadow: none;">
+            <div class="panel-split-v">
+                <!-- Top Half: Properties Panel -->
+                <div class="split-pane top">
+                    <div class="scroll" style="height: 100%; padding: 16px;">
+                         <app-properties-panel [node]="selectedNode"></app-properties-panel>
+                    </div>
+                </div>
+                
+                <!-- Bottom Half: Tree View -->
+                <div class="split-pane bottom">
+                    <app-tree-view-panel></app-tree-view-panel>
+                </div>
             </div>
         </aside>
     </div>

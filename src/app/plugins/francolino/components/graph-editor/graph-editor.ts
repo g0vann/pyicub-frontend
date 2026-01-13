@@ -54,6 +54,8 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
   @HostListener('window:keydown.escape', ['$event'])
   onEscapeKeyPress(event: KeyboardEvent) {
     this.cy.nodes().removeClass('search-highlight');
+    // Esci dalla modalità disegno arco
+    this.graphState.setEdgeType(null);
   }
 
   ngAfterViewInit() {

@@ -184,6 +184,36 @@
     /* Padding interno per staccare il contenuto dal bordo del pannello */
 }
 
+/* === NUOVO: Split verticale per il pannello destro === */
+.panel-split-v {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    gap: 16px; /* Spazio tra i due pannelli */
+}
+
+.split-pane {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.split-pane.top {
+    flex: 1 1 50%; /* Properties */
+}
+
+.split-pane.bottom {
+    flex: 1 1 50%; /* TreeView */
+}
+
+
 /* Pannello centrale (GraphEditor) */
 .center {
     overflow: hidden;

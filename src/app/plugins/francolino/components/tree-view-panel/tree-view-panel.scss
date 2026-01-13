@@ -1,0 +1,91 @@
+.tree-container {
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Allow scrolling inside the tree panel */
+    background-color: #fafafa;
+    padding-top: 8px;
+  }
+  
+  mat-tree {
+    background: transparent; 
+  }
+  
+  mat-tree-node {
+    min-height: 32px; /* Compact height */
+    
+    .node-content {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      width: 100%;
+      padding-right: 8px;
+      overflow: hidden;
+      border-radius: 4px;
+      
+      &:hover {
+        background-color: rgba(0,0,0,0.04);
+      }
+  
+      &.ref-node {
+        color: #666;
+        font-style: italic;
+        
+        .ref-icon {
+          transform: scaleX(-1); /* Flip reply icon to look like a return hook */
+          color: #999;
+        }
+      }
+  
+      &.folder-node {
+        color: #d32f2f;
+        font-weight: 500;
+        cursor: default; /* Folders aren't clickable for focus */
+      }
+    }
+  
+    .type-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-right: 8px;
+      color: #757575; /* Default Grey */
+  
+      &.warn-icon { color: #d32f2f; } /* Red for folders/warnings */
+    }
+
+    /* Icon Colors based on context (applied directly in template logic or here) */
+    /* Since we use ngIf in template, let's target them if possible or just rely on the template adding classes. 
+       Actually, let's modify the SCSS to target the mat-icon by content if possible, or better, add classes in HTML.
+       Wait, I'll update the SCSS to be generic and then update HTML to add classes 'icon-init', 'icon-action', etc.
+       Or simpler: just use :nth-child or similar? No, too brittle.
+       I will assume I can edit this file to add classes, but I need to edit HTML to Apply them first? 
+       No, I can target by attribute [class*="..."] if I change HTML.
+       
+       Let's just update the SCSS to include specific color modifiers and I will update HTML next.
+    */
+    .icon-init { color: #4CAF50 !important; }
+    .icon-action { color: #3f51b5 !important; }
+    .icon-ref { color: #ff9800 !important; }
+    .icon-folder { color: #d32f2f !important; }
+  
+    .label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 13px;
+      line-height: 32px;
+    }
+  
+    /* Button fix */
+    button[matTreeNodeToggle] {
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
