@@ -1,26 +1,51 @@
+:host {
+    display: block;
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden; /* Delega lo scroll al container interno */
+}
+
 .tree-container {
     width: 100%;
     height: 100%;
-    overflow: auto; /* Allow scrolling inside the tree panel */
+    overflow: auto; /* Abilita scrolling sia X che Y */
     background-color: #fafafa;
     padding-top: 8px;
-  }
+
+    /* Scrollbar Styling sottile e moderno */
+    &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 10px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+        background: #bbb;
+    }
+}
   
-  mat-tree {
-    background: transparent; 
-  }
+mat-tree {
+    background: transparent;
+    min-width: fit-content; /* Fondamentale per permettere lo scroll orizzontale */
+    display: inline-block;  /* Impedisce al tree di collassare alla larghezza del parent */
+    width: 100%;
+}
   
-  mat-tree-node {
-    min-height: 32px; /* Compact height */
+mat-tree-node {
+    min-height: 32px;
+    white-space: nowrap; /* Impedisce al testo di andare a capo */
     
     .node-content {
       display: flex;
       align-items: center;
       cursor: pointer;
-      width: 100%;
-      padding-right: 8px;
-      overflow: hidden;
+      padding-right: 12px;
       border-radius: 4px;
+      min-width: 0;
+      flex: 1;
       
       &:hover {
         background-color: rgba(0,0,0,0.04);
@@ -31,7 +56,7 @@
         font-style: italic;
         
         .ref-icon {
-          transform: scaleX(-1); /* Flip reply icon to look like a return hook */
+          transform: scaleX(-1);
           color: #999;
         }
       }
@@ -39,41 +64,31 @@
       &.folder-node {
         color: #d32f2f;
         font-weight: 500;
-        cursor: default; /* Folders aren't clickable for focus */
+        cursor: default;
       }
     }
   
     .type-icon {
+      flex-shrink: 0; /* Impedisce all'icona di rimpicciolirsi */
       font-size: 18px;
       width: 18px;
       height: 18px;
       margin-right: 8px;
-      color: #757575; /* Default Grey */
+      color: #757575;
   
-      &.warn-icon { color: #d32f2f; } /* Red for folders/warnings */
+      &.warn-icon { color: #d32f2f; }
     }
 
-    /* Icon Colors based on context (applied directly in template logic or here) */
-    /* Since we use ngIf in template, let's target them if possible or just rely on the template adding classes. 
-       Actually, let's modify the SCSS to target the mat-icon by content if possible, or better, add classes in HTML.
-       Wait, I'll update the SCSS to be generic and then update HTML to add classes 'icon-init', 'icon-action', etc.
-       Or simpler: just use :nth-child or similar? No, too brittle.
-       I will assume I can edit this file to add classes, but I need to edit HTML to Apply them first? 
-       No, I can target by attribute [class*="..."] if I change HTML.
-       
-       Let's just update the SCSS to include specific color modifiers and I will update HTML next.
-    */
     .icon-init { color: #4CAF50 !important; }
     .icon-action { color: #3f51b5 !important; }
     .icon-ref { color: #ff9800 !important; }
     .icon-folder { color: #d32f2f !important; }
   
     .label {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      flex: 1;
       font-size: 13px;
       line-height: 32px;
+      /* Rimosso overflow: ellipsis per permettere lo scorrimento orizzontale */
     }
   
     /* Button fix */
