@@ -9,6 +9,7 @@ import {Application} from "../types/Application";
 import {MatDialog} from "@angular/material/dialog";
 import {RestoreSessionDialogComponent} from "../restore-session-dialog/restore-session-dialog.component";
 import {DashboardFullDialogComponent} from "../dashboard-full-dialog/dashboard-full-dialog.component";
+import {pluginIndex} from "../plugins";
 
 @Component({
   selector: 'app-dashboard',
@@ -21,8 +22,23 @@ export class DashboardComponent implements OnInit {
 
   itemsSize: { [key: string]: { width: number, height: number } } = {};
 
+  private _application: Application;
+
   @Input()
-  application: Application
+  set application(value: Application) {
+    this._application = value;
+    if (this._application && this._application.plugins) {
+      this._application.plugins.forEach(p => {
+        if (!p.component && pluginIndex[p.name]) {
+          p.component = pluginIndex[p.name];
+        }
+      });
+    }
+  }
+
+  get application(): Application {
+    return this._application;
+  }
 
   @Input()
   set editModeEnabled(value: boolean) {

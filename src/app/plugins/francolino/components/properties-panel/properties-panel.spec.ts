@@ -56,6 +56,7 @@ describe('PropertiesPanel', () => {
         name: 'MyAction',
         description: 'Test Desc',
         offset_ms: 500,
+        steps: [{}, {}], // Aggiunto steps per permettere il calcolo corretto di wait_for_steps
         wait_for_steps: [true, false]
       }
     };

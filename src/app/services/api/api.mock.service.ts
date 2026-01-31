@@ -8,8 +8,8 @@ import {ApplicationArgsTemplate} from "../../types/ApplicationArgsTemplate";
 import {FSM} from "../../types/FSM";
 import {Application} from "../../types/Application";
 import {Robot} from "../../types/Robot";
-import {pluginIndex} from "../../plugins";
-import * as defaultDashboardConfig from "../../defaultDashboardConfiguration.json";
+import {PLUGIN_NAMES} from "../../plugins/plugin-names";
+import defaultDashboardConfig from "../../defaultDashboardConfiguration.json";
 import {Plugin} from "../../types/Plugin";
 import {ApplicationArgType} from "../../types/ApplicationArgType";
 @Injectable({
@@ -193,14 +193,14 @@ export class ApiMockService implements IApiService {
           value:[1,2,3,4]
         }
       }
-      for (const [pluginName, componentName] of Object.entries(pluginIndex)) {
+      for (const pluginName of PLUGIN_NAMES) {
         const pluginDefaultData = defaultDashboardConfig[pluginName];
         const x = pluginDefaultData?.x || 0;
         const y = pluginDefaultData?.y || 0;
         const cols = pluginDefaultData?.cols || 20;
         const rows = pluginDefaultData?.rows || 20;
         const enabled = pluginDefaultData?.enabled || false;
-        application.plugins.push(new Plugin(pluginName, componentName, enabled, cols, rows, x, y))
+        application.plugins.push(new Plugin(pluginName, null, enabled, cols, rows, x, y))
       }
       robot1.applications.push(application)
     }
@@ -210,14 +210,14 @@ export class ApiMockService implements IApiService {
         robot2.applications = []
       }
       let application = new Application(`iCubMock1`,`appMock${i+1}Robot2`,"http://localhost:8001/pyicub/iCubMock1")
-      for (const [pluginName, componentName] of Object.entries(pluginIndex)) {
+      for (const pluginName of PLUGIN_NAMES) {
         const pluginDefaultData = defaultDashboardConfig[pluginName];
         const x = pluginDefaultData?.x || 0;
         const y = pluginDefaultData?.y || 0;
         const cols = pluginDefaultData?.cols || 20;
         const rows = pluginDefaultData?.rows || 20;
         const enabled = pluginDefaultData?.enabled || false;
-        application.plugins.push(new Plugin(pluginName, componentName, enabled, cols, rows, x, y))
+        application.plugins.push(new Plugin(pluginName, null, enabled, cols, rows, x, y))
       }
       robot2.applications.push(application)
     }
@@ -227,14 +227,14 @@ export class ApiMockService implements IApiService {
         robot3.applications = []
       }
       let application = new Application(`iCubMock1`,`appMock${i+1}Robot3`,"http://localhost:8001/pyicub/iCubMock1")
-      for (const [pluginName, componentName] of Object.entries(pluginIndex)) {
+      for (const pluginName of PLUGIN_NAMES) {
         const pluginDefaultData = defaultDashboardConfig[pluginName];
         const x = pluginDefaultData?.x || 0;
         const y = pluginDefaultData?.y || 0;
         const cols = pluginDefaultData?.cols || 20;
         const rows = pluginDefaultData?.rows || 20;
         const enabled = pluginDefaultData?.enabled || false;
-        application.plugins.push(new Plugin(pluginName, componentName, enabled, cols, rows, x, y))
+        application.plugins.push(new Plugin(pluginName, null, enabled, cols, rows, x, y))
       }
       robot3.applications.push(application)
     }

@@ -29,7 +29,7 @@ import { ViewBox } from './models/view-box.model';
 @Component({
   selector: 'graphy-ng',
   templateUrl: './graphy.component.html',
-  styleUrls: ['./graphy.component.scss']
+  styleUrls: ['./graphy.component.css']
 })
 export class GraphyComponent<N, E> implements AfterViewInit, OnDestroy {
   /**

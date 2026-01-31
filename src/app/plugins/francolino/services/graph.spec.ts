@@ -1,12 +1,16 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { GraphService } from './graph.service';
 
-describe('GraphService', () => {
+describe('GraphService (smoke)', () => {
   let service: GraphService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [GraphService],
+    });
     service = TestBed.inject(GraphService);
   });
 

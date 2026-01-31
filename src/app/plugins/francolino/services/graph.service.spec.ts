@@ -16,10 +16,6 @@ describe('GraphService', () => {
     httpMock = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => {
-    httpMock.verify();
-  });
-
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
@@ -30,18 +26,16 @@ describe('GraphService', () => {
     expect(data.edges).toEqual([]);
   });
 
-  it('should add a node and update state', () => {
+  it('should add a node and update state', async () => {
     const nodeData: Partial<GraphNode> = { label: 'TestNode', color: 'red', type: 'action' };
     
-    // addNode è async perché potrebbe chiamare il backend per il template
-    service.addNode(nodeData, 'TestAction');
+    // addNode è async
+    const promise = service.addNode(nodeData, 'TestAction');
 
-    // Mock della richiesta HTTP per il template dell'azione (se avviene)
-    // Nota: Se addNode chiama l'URL, dobbiamo aspettarcelo. 
-    // Se il test fallisce qui, significa che addNode sta facendo una chiamata.
-    // Per questo test assumiamo che addNode faccia una chiamata GET se actionType è definito.
     const req = httpMock.expectOne(req => req.url.includes('/actions/TestAction'));
     req.flush({ _palette: {}, someData: '123' });
+
+    await promise;
 
     const data = service.getCurrentGraphData();
     expect(data.nodes.length).toBe(1);

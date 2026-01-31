@@ -56,8 +56,9 @@ export class Shell implements OnInit {
 
   public graphService = inject(GraphService);
   public actionsService = inject(ActionsService);
-  public http = inject(HttpClient);
   public appStateService = inject(AppStateService);
+
+  constructor(public http: HttpClient) {}
 
   @HostBinding('style.--left')  leftCss  = '280px';
   @HostBinding('style.--right') rightCss = '320px';
@@ -592,6 +593,7 @@ export class Shell implements OnInit {
 
     try {
       const backendUrl = `${environment.apiScheme}://${environment.apiHost}:${environment.apiPort}/pyicub/icubSim/iCubRESTApp/fsm.load_fsm?sync`;
+      console.log('DEBUG: saveFsm calling URL:', backendUrl);
       await lastValueFrom(
         this.http.post(backendUrl, jsonString, { headers: { 'Content-Type': 'application/json' } })
       );

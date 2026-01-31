@@ -17,11 +17,7 @@ cytoscape.use(cxtmenu);
   standalone: true,
   imports: [CommonModule, MatButtonModule, MatIconModule, MatSnackBarModule],
   templateUrl: './graph-editor.html',
-  styleUrls: ['./graph-editor.scss'],
-  host: {
-    '(dragover)': 'onDragOver($event)',
-    '(drop)': 'onDrop($event)',
-  }
+  styleUrls: ['./graph-editor.scss']
 })
 export class GraphEditor implements AfterViewInit, OnDestroy {
   @ViewChild('cyContainer', { static: true }) cyContainer!: ElementRef<HTMLElement>;
@@ -43,7 +39,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
   private snackBar = inject(MatSnackBar);
 
   @HostListener('window:keydown.delete', ['$event'])
-  onDeleteKeyPress(event: KeyboardEvent) {
+  onDeleteKeyPress(event: Event) {
     const selected = this.cy.elements(':selected');
     if (selected.length > 0) {
       const idsToRemove = selected.map(el => el.id());
@@ -52,7 +48,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
   }
 
   @HostListener('window:keydown.escape', ['$event'])
-  onEscapeKeyPress(event: KeyboardEvent) {
+  onEscapeKeyPress(event: Event) {
     this.cy.nodes().removeClass('search-highlight');
     // Esci dalla modalità disegno arco
     this.graphState.setEdgeType(null);
@@ -340,11 +336,13 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
   }
 
   // ... Drag & Drop da Palette (invariato) ...
+  @HostListener('dragover', ['$event'])
   onDragOver(event: DragEvent) {
     event.preventDefault();
     event.dataTransfer!.effectAllowed = 'copy';
   }
 
+  @HostListener('drop', ['$event'])
   onDrop(event: DragEvent) {
     event.preventDefault();
     const action = JSON.parse(event.dataTransfer!.getData('application/json')) as Action;

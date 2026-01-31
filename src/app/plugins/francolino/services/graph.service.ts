@@ -19,7 +19,6 @@ import { environment } from '../../../../environments/environment';
   providedIn: 'root'
 })
 export class GraphService {
-  private http = inject(HttpClient);
 
   private readonly graphData$ = new BehaviorSubject<GraphData>({ nodes: [], edges: [] });
   private readonly layoutRequest$ = new Subject<'fit'>();
@@ -36,6 +35,8 @@ export class GraphService {
   // Canale per richiedere il focus su un nodo specifico (es. dalla search bar)
   private readonly focusNodeSource = new Subject<string>();
   public readonly focusNode$ = this.focusNodeSource.asObservable();
+
+  constructor(private http: HttpClient) {}
 
   getGraphData(): Observable<GraphData> {
     return this.graphData$.asObservable();

@@ -15,9 +15,9 @@ import {ICubEmoPart} from "../../types/ICubEmoPart";
 import {ICubEmoEmotion} from "../../types/ICubEmoEmotion";
 import {ICubEmoColor} from "../../types/ICubEmoColor";
 import {Robot} from "../../types/Robot";
-import {pluginIndex} from "../../plugins";
+import {PLUGIN_NAMES} from "../../plugins/plugin-names";
 import {Plugin} from "../../types/Plugin";
-import * as defaultDashboardConfig from "../../defaultDashboardConfiguration.json"
+import defaultDashboardConfig from "../../defaultDashboardConfiguration.json"
 import {IApiService} from "./api.service.interface";
 import {GetRobotActionsResponse} from "./types/GetRobotActionsResponse";
 import {LocalStorageService} from "../local-storage.service";
@@ -83,14 +83,14 @@ export class ApiService implements IApiService {
               application.args = this.sessionStorageService.getApplicationArgs(robotName, application.name) || {}
               application.isConfigured = this.sessionStorageService.getIsApplicationConfigured(robotName, application.name)
               const savedDashboard = this.localStorageService.getDashboardConfig(application)
-              for (const [pluginName, componentName] of Object.entries(pluginIndex)) {
+              for (const pluginName of PLUGIN_NAMES) {
                 const pluginDefaultData = (savedDashboard && savedDashboard[pluginName]) ? savedDashboard[pluginName] : defaultDashboardConfig[pluginName];
                 const x = pluginDefaultData?.x || 0;
                 const y = pluginDefaultData?.y || 0;
                 const cols = pluginDefaultData?.cols || 20;
                 const rows = pluginDefaultData?.rows || 20;
                 const enabled = pluginDefaultData?.enabled || false;
-                application.plugins.push(new Plugin(pluginName, componentName, enabled, cols, rows, x, y))
+                application.plugins.push(new Plugin(pluginName, null, enabled, cols, rows, x, y))
               }
               //console.log(application.argsTemplate)
               return application
