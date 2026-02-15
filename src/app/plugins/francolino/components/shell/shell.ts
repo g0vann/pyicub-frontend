@@ -2,28 +2,31 @@
  * @file shell.ts
  */
 
-import { Component, inject, ViewChild, ElementRef, HostBinding, HostListener, OnInit } from '@angular/core';
+import { Component, inject, ViewChild, ElementRef, HostBinding, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { lastValueFrom, map, Observable, forkJoin } from 'rxjs';
+import { lastValueFrom, map, Observable, forkJoin, Subscription } from 'rxjs';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule }    from '@angular/material/icon';
 import { MatListModule }    from '@angular/material/list';
 import { MatButtonModule }  from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { ActionPalette }    from '../action-palette/action-palette';
 import { PropertiesPanel }  from '../properties-panel/properties-panel';
 import { TreeViewPanel }    from '../tree-view-panel/tree-view-panel';
 import { GraphService }     from '../../services/graph.service';
+import { GraphStateService } from '../../services/graph-state';
 import { GraphData, GraphEdge, GraphNode } from '../../models/graph.model';
 import { GraphEditor }      from '../graph-editor/graph-editor';
 import { AppStateService } from '../../../../services/app-state.service';
 import { environment } from '../../../../../environments/environment';
 import { v4 as uuid } from 'uuid';
 import { ActionsService, NodeAction } from '../../services/actions';
+import { PluginFeedbackService } from '../../services/plugin-feedback.service';
 
 @Component({
   selector: 'app-shell',
@@ -37,6 +40,7 @@ import { ActionsService, NodeAction } from '../../services/actions';
     MatListModule,
     MatButtonModule,
     MatTooltipModule,
+    MatAutocompleteModule,
     // App
     ActionPalette,
     PropertiesPanel,
@@ -47,16 +51,19 @@ import { ActionsService, NodeAction } from '../../services/actions';
   templateUrl: './shell.html',
   styleUrls: ['./shell.scss']
 })
-export class Shell implements OnInit {
+export class Shell implements OnInit, OnDestroy {
   selectedNode: any;
+  nodeSuggestions: string[] = [];
   public isGraphEmpty$!: Observable<boolean>;
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild(GraphEditor) editor!: GraphEditor;
 
   public graphService = inject(GraphService);
+  public graphState = inject(GraphStateService);
   public actionsService = inject(ActionsService);
   public appStateService = inject(AppStateService);
+  public feedback = inject(PluginFeedbackService);
 
   constructor(public http: HttpClient) {}
 
@@ -67,6 +74,16 @@ export class Shell implements OnInit {
   renaming = false;
   q = '';
   searchError = '';
+  feedbackPromptValue = '';
+  private readonly subs = new Subscription();
+
+  private showMessage(message: string, _action = 'OK', _duration = 4000) {
+    this.feedback.show(message);
+  }
+
+  private showToast(message: string, duration = 3000) {
+    this.feedback.showToast(message, duration);
+  }
 
   ngOnInit(): void {
     this.isGraphEmpty$ = this.graphService.getGraphData().pipe(
@@ -75,6 +92,35 @@ export class Shell implements OnInit {
 
     const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
     this.actionsService.loadNodeActionsFromServer(robotName, "iCubRESTApp");
+
+    this.subs.add(this.feedback.message$.subscribe(msg => {
+      if (msg?.mode === 'prompt') {
+        this.feedbackPromptValue = msg.defaultValue || '';
+      }
+    }));
+
+    // Keep selection in sync with graph mutations (delete/context-menu/clear).
+    this.subs.add(this.graphService.getGraphData().subscribe(graphData => {
+      this.nodeSuggestions = Array.from(
+        new Set(
+          graphData.nodes
+            .map(n => (n.label || '').trim())
+            .filter(Boolean)
+        )
+      ).sort((a, b) => a.localeCompare(b));
+
+      if (!this.selectedNode?.id) return;
+      const selectedId = this.selectedNode.id as string;
+      const existsAsNode = graphData.nodes.some(n => n.id === selectedId);
+      const existsAsEdge = graphData.edges.some(e => e.id === selectedId);
+      if (!existsAsNode && !existsAsEdge) {
+        this.selectedNode = undefined;
+      }
+    }));
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   private dragSide: 'left'|'right' | null = null;
@@ -105,7 +151,37 @@ export class Shell implements OnInit {
     }
   }
 
+  get filteredNodeSuggestions(): string[] {
+    const term = (this.q || '').trim().toLowerCase();
+    if (!term) return this.nodeSuggestions.slice(0, 10);
+    return this.nodeSuggestions
+      .filter(name => name.toLowerCase().includes(term))
+      .slice(0, 10);
+  }
+
+  onSuggestionSelected(value: string) {
+    this.q = value;
+    this.searchError = '';
+    this.onSearch(value);
+  }
+
   fitGraph() { this.editor?.fit(); }
+
+  private isCanvasEmpty(): boolean {
+    const data = this.graphService.getCurrentGraphData();
+    return data.nodes.length === 0 && data.edges.length === 0;
+  }
+
+  async triggerImportJson() {
+    if (!this.isCanvasEmpty()) {
+      const confirmed = await this.feedback.confirm(
+        'Il canvas non e vuoto. Importando un nuovo JSON il contenuto attuale verra sostituito. Continuare?',
+        'Conferma import'
+      );
+      if (!confirmed) return;
+    }
+    this.fileInput?.nativeElement.click();
+  }
 
   private getRandomColor(): string {
     const letters = '0123456789ABCDEF';
@@ -114,6 +190,14 @@ export class Shell implements OnInit {
         color += letters[Math.floor(Math.random() * 16)];
     }
     return color;
+  }
+
+  onPromptConfirm() {
+    this.feedback.resolvePrompt(this.feedbackPromptValue);
+  }
+
+  onPromptCancel() {
+    this.feedback.resolvePrompt(null);
   }
 
   onFileSelected(event: Event) {
@@ -137,7 +221,7 @@ export class Shell implements OnInit {
           const missingActions = requiredActionNames.filter(name => !availableActionNames.has(name) && name !== 'init');
 
           if (missingActions.length > 0) {
-            const confirmed = window.confirm(
+            const confirmed = await this.feedback.confirm(
               `The following actions are missing:\n- ${missingActions.join('\n- ')}\n\nDo you want to create them on the server? Their definitions will be extracted from the imported file.`
             );
 
@@ -148,7 +232,7 @@ export class Shell implements OnInit {
               await this.createMissingActionsOnServer(missingActionDefinitions);
               await this.actionsService.loadNodeActionsFromServer(robotName, "iCubRESTApp");
             } else {
-              const proceed = window.confirm("Continue loading without creating actions? Nodes may not appear correctly.");
+              const proceed = await this.feedback.confirm("Continue loading without creating actions? Nodes may not appear correctly.");
               if (!proceed) {
                 input.value = '';
                 return;
@@ -162,7 +246,7 @@ export class Shell implements OnInit {
           graphData = fileContent as GraphData;
 
         } else {
-          alert('Error: The JSON file does not have a valid format.');
+          this.showMessage('Error: The JSON file does not have a valid format.');
           return;
         }
 
@@ -170,11 +254,12 @@ export class Shell implements OnInit {
           console.log('Loading graph data into service...');
           this.graphService.loadGraph(graphData);
           this.fileName = file.name || 'Grafo.json';
+          this.showToast('Import JSON completato con successo.');
         }
 
       } catch (e) {
         console.error('Error parsing JSON file:', e);
-        alert('Error: The selected file is not a valid JSON.');
+        this.showMessage('Error: The selected file is not a valid JSON.');
       } finally {
         input.value = '';
       }
@@ -553,7 +638,7 @@ export class Shell implements OnInit {
   private _performDownload() {
     const errors = this.validateGraph();
     if (errors.length > 0) {
-      alert('Impossibile esportare il grafo:\n\n- ' + errors.join('\n- '));
+      this.showMessage('Impossibile esportare il grafo: ' + errors.join(' | '), 'OK', 7000);
       return;
     }
     const { jsonString } = this._generateFsmJson({ clean: false });
@@ -561,21 +646,38 @@ export class Shell implements OnInit {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = this.fileName || 'grafo.json';
+    a.download = this.fileName || 'Grafo.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+    this.showToast('Download JSON completato con successo.');
   }
 
   downloadFsm() {
     this._performDownload();
   }
 
+  async clearCanvas() {
+    const confirmed = await this.feedback.confirm(
+      'Vuoi azzerare il canvas? Tutti i nodi e le transizioni verranno rimossi.',
+      'Azzera canvas'
+    );
+    if (!confirmed) return;
+
+    this.graphService.clearGraph();
+    this.fileName = 'Grafo.json';
+    this.selectedNode = undefined;
+    this.q = '';
+    this.searchError = '';
+    this.graphState.setEdgeType(null);
+    this.showToast('Canvas azzerato con successo.');
+  }
+
   async saveFsm() {
     const errors = this.validateGraph();
     if (errors.length > 0) {
-      alert('Impossibile salvare il grafo:\n\n- ' + errors.join('\n- '));
+      this.showMessage('Impossibile salvare il grafo: ' + errors.join(' | '), 'OK', 7000);
       return;
     }
     // this._performDownload();
@@ -599,10 +701,10 @@ export class Shell implements OnInit {
       );
       await new Promise(resolve => setTimeout(resolve, 500));
       this.appStateService.triggerFsmPluginReload();
-      alert('FSM salvato sul backend con successo!');
+      this.showToast('FSM salvato sul backend con successo.');
     } catch (e) {
       console.error('Error sending FSM to backend', e);
-      alert('Errore nell\'invio della FSM al backend. Il file è stato comunque scaricato localmente.');
+      this.showMessage('Errore nell\'invio della FSM al backend. Il file e stato comunque scaricato localmente.', 'OK', 7000);
     }
   }
 
@@ -621,6 +723,14 @@ export class Shell implements OnInit {
   }
 
   async loadFsmFromServer() {
+    if (!this.isCanvasEmpty()) {
+      const confirmed = await this.feedback.confirm(
+        'Il canvas non e vuoto. Ricaricando lo stato dal robot il contenuto attuale verra sostituito. Continuare?',
+        'Conferma ricarica'
+      );
+      if (!confirmed) return;
+    }
+
     try {
       const robotName = this.appStateService.selectedRobot?.name || 'icubSim';
       const appName = 'iCubRESTApp';
@@ -636,13 +746,14 @@ export class Shell implements OnInit {
           this.graphService.loadGraph(graphData);
           this.fileName = fsmData.name ? `${fsmData.name}.json` : 'fsm_from_server.json';
           console.log('Successfully loaded FSM from server.');
+          this.showToast('Stato ricaricato dal robot con successo.');
         }
       } else {
-        alert('Error: Received empty FSM data from the server.');
+        this.showMessage('Error: Received empty FSM data from the server.');
       }
     } catch (e) {
       console.error('Error loading FSM from server:', e);
-      alert('Error: Could not load FSM from the server.');
+      this.showMessage('Error: Could not load FSM from the server.');
     }
   }
 }

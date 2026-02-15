@@ -274,7 +274,7 @@ export class ApiService implements IApiService {
     this.asyncRequestsStatus[requestID] = ICubRequestStatus.INIT
     initCallback()
 
-    interval(100).pipe(
+    interval(500).pipe(
       switchMap(() => {
         return this.http.get<GetRequestStatusResponse>(requestStatusPath).pipe(
           tap(response => {

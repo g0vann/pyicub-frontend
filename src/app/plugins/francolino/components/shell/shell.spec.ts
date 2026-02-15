@@ -6,6 +6,7 @@ import { AppStateService } from '../../../../services/app-state.service';
 import { GraphStateService } from '../../services/graph-state';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { HttpClient } from '@angular/common/http';
+import { PluginFeedbackService } from '../../services/plugin-feedback.service';
 import { of, BehaviorSubject } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -67,7 +68,6 @@ describe('Shell', () => {
 
     fixture = TestBed.createComponent(Shell);
     component = fixture.componentInstance;
-    spyOn(window, 'alert'); // Spy on alert to suppress and verify
     fixture.detectChanges();
   });
 
@@ -81,12 +81,14 @@ describe('Shell', () => {
 
     // Spy on HttpClient.post to assert backend call
     const postSpy = spyOn(component['http'], 'post').and.returnValue(of({ status: 'success' }));
+    const feedback = TestBed.inject(PluginFeedbackService);
+    const feedbackSpy = spyOn(feedback, 'showToast');
 
     await component.saveFsm();
 
-    // Verify success alert and backend invocation
-    expect(window.alert).toHaveBeenCalled();
-    expect((window.alert as jasmine.Spy).calls.mostRecent().args[0]).toContain('salvato');
+    // Verify success feedback and backend invocation
+    expect(feedbackSpy).toHaveBeenCalled();
+    expect(feedbackSpy.calls.mostRecent().args[0]).toContain('salvato');
     expect(postSpy).toHaveBeenCalled();
     expect(mockAppState.triggerFsmPluginReload).toHaveBeenCalled();
   });

@@ -56,6 +56,11 @@ export class GraphService {
     this.layoutRequest$.next('fit');
   }
 
+  clearGraph() {
+    this.pushStateToHistory(this.graphData$.getValue());
+    this.graphData$.next({ nodes: [], edges: [] });
+  }
+
   async addNode(nodeData: Partial<GraphNode>, actionType?: string) {
     this.pushStateToHistory(this.graphData$.getValue());
     const currentState = this.graphData$.getValue();

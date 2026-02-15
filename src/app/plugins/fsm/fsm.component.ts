@@ -23,6 +23,7 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
   errorMessage: string;
   pollingInterval: any; // Variable to hold the interval reference
   private destroy$ = new Subject<void>();
+  private lastObservedProcessId: string | null = null;
 
   private _graphy: GraphyComponent<any, any>;
   @ViewChild(GraphyComponent)
@@ -79,6 +80,11 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
         if (!currentNode) return; // Guard against node not found
 
         this.fsmGetCurrentProcess().subscribe(reqID => {
+          // Avoid starting duplicated async status polling for the same process id.
+          if (!reqID || reqID === this.lastObservedProcessId) {
+            return;
+          }
+          this.lastObservedProcessId = reqID;
           this.currentNodeID = currentNode.id;
 
           const onRunning = () => {
@@ -133,7 +139,7 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
           this.checkAsyncRequestStatus(reqID, undefined, onRunning, onDone, onFailed, onTimeout);
         });
       });
-    }, 250);
+    }, 1000);
 
     this.loadFSM();
 
@@ -156,6 +162,7 @@ export class FsmComponent extends WidgetBaseComponent implements OnInit, OnDestr
     this.startingNode = undefined;
     this.currentNodeID = undefined;
     this.previousNodeID = undefined;
+    this.lastObservedProcessId = null;
 
     // The configureApplication call was redundant and is removed from here. 
     // It's called from higher-level components or specifically on reset.

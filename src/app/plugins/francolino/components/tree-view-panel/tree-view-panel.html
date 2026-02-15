@@ -2,14 +2,16 @@
     <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
       <!-- Leaf Node -->
       <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding [matTreeNodePaddingIndent]="15">
-        <!-- Button to toggle expand is hidden for leaves but keeps spacing consistent if needed, 
-             but here we just want a clean line -->
-        
         <div class="node-content" 
              [class.ref-node]="node.type === 'ref'" 
              (click)="onNodeClick(node)"
              [matTooltip]="node.name"
              matTooltipPosition="right">
+
+          <!-- Spacer to align leaves with expandable nodes -->
+          <button mat-icon-button class="toggle-spacer" disabled tabindex="-1" aria-hidden="true">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
           
           <!-- Icon Logic -->
           <mat-icon class="type-icon icon-init" *ngIf="node.type === 'init'">play_circle_filled</mat-icon>

@@ -17,10 +17,14 @@
             <mat-icon>file_download</mat-icon>
         </button>
 
-        <button mat-icon-button aria-label="Importa JSON" (click)="fileInput.click()" matTooltip="Importa file JSON">
+        <button mat-icon-button aria-label="Importa JSON" (click)="triggerImportJson()" matTooltip="Importa file JSON">
             <mat-icon>file_upload</mat-icon>
         </button>
         <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".json">
+
+        <button mat-icon-button aria-label="Azzera canvas" (click)="clearCanvas()" matTooltip="Azzera canvas" [disabled]="isGraphEmpty$ | async">
+            <mat-icon>delete_sweep</mat-icon>
+        </button>
 
         <span class="v-divider" aria-hidden="true"></span>
 
@@ -54,7 +58,19 @@
     <div class="cluster" style="position: relative;">
         <div class="searchbar" [class.has-error]="searchError">
             <mat-icon>search</mat-icon>
-            <input type="text" [(ngModel)]="q" (keydown.enter)="onSearch(q)" (input)="searchError = ''" placeholder="Cerca" />
+            <input
+                type="text"
+                [(ngModel)]="q"
+                (keydown.enter)="onSearch(q)"
+                (input)="searchError = ''"
+                placeholder="Cerca"
+                [matAutocomplete]="nodeAuto"
+            />
+            <mat-autocomplete #nodeAuto="matAutocomplete" (optionSelected)="onSuggestionSelected($event.option.value)">
+                <mat-option *ngFor="let name of filteredNodeSuggestions" [value]="name">
+                    {{ name }}
+                </mat-option>
+            </mat-autocomplete>
             <button *ngIf="q" class="icon-btn" aria-label="Pulisci" (click)="q = ''; searchError = ''">
                 <mat-icon>close</mat-icon>
             </button>
@@ -77,6 +93,9 @@
 
         <main class="panel center">
             <app-graph-editor (nodeSelect)="selectedNode = $event"></app-graph-editor>
+            <div class="plugin-toast" [class.with-tooltip]="graphState.currentEdgeType | async" *ngIf="feedback.toast$ | async as toast">
+                {{ toast }}
+            </div>
         </main>
 
         <div class="gutter" (mousedown)="startDrag('right', $event)" matTooltip="Ridimensiona"
@@ -97,5 +116,32 @@
                 </div>
             </div>
         </aside>
+    </div>
+</div>
+
+<div class="plugin-modal-backdrop" *ngIf="feedback.message$ | async as msg">
+    <div class="plugin-modal" role="dialog" aria-modal="true" [attr.aria-label]="msg.title">
+        <h3>{{ msg.title }}</h3>
+        <p>{{ msg.text }}</p>
+        <div class="actions" *ngIf="msg.mode === 'alert'">
+            <button mat-raised-button color="primary" (click)="feedback.clear()">OK</button>
+        </div>
+        <div class="actions" *ngIf="msg.mode === 'confirm'">
+            <button mat-stroked-button (click)="feedback.resolveConfirm(false)">{{ msg.cancelLabel || 'Annulla' }}</button>
+            <button mat-raised-button color="primary" (click)="feedback.resolveConfirm(true)">{{ msg.confirmLabel || 'Conferma' }}</button>
+        </div>
+        <div class="prompt-input" *ngIf="msg.mode === 'prompt'">
+            <input
+                type="text"
+                [(ngModel)]="feedbackPromptValue"
+                [placeholder]="msg.placeholder || ''"
+                autofocus
+                (keydown.enter)="onPromptConfirm()"
+            />
+        </div>
+        <div class="actions" *ngIf="msg.mode === 'prompt'">
+            <button mat-stroked-button (click)="onPromptCancel()">{{ msg.cancelLabel || 'Annulla' }}</button>
+            <button mat-raised-button color="primary" (click)="onPromptConfirm()">{{ msg.confirmLabel || 'Conferma' }}</button>
+        </div>
     </div>
 </div>

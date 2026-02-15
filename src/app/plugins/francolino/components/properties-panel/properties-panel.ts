@@ -11,6 +11,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { GraphNode } from '../../models/graph.model';
 import { GraphService } from '../../services/graph.service';
+import { PluginFeedbackService } from '../../services/plugin-feedback.service';
 import { debounceTime, Subject, Subscription } from 'rxjs';
 
 @Component({
@@ -32,6 +33,7 @@ export class PropertiesPanel implements OnDestroy, OnChanges {
   @Input() node: GraphNode | undefined;
 
   private graphService = inject(GraphService);
+  private feedback = inject(PluginFeedbackService);
   private modelChanged = new Subject<void>();
   private subscription: Subscription;
 
@@ -42,6 +44,10 @@ export class PropertiesPanel implements OnDestroy, OnChanges {
     wait_for_steps: []
   };
   stepsCount = 0;
+
+  private showMessage(message: string, _action = 'OK', _duration = 4000) {
+    this.feedback.show(message);
+  }
 
   constructor() {
     this.subscription = this.modelChanged
@@ -76,13 +82,13 @@ export class PropertiesPanel implements OnDestroy, OnChanges {
     if (!this.node) return;
     const newName = (this.formState.name || '').trim();
     if (!newName) {
-      alert('Il nome dell\'azione è obbligatorio.');
+      this.showMessage('Il nome dell\'azione e obbligatorio.');
       return;
     }
     const duplicate = this.graphService.getCurrentGraphData().nodes
       .some(n => n.id !== this.node!.id && (n.label === newName || (n.data && n.data.name === newName)));
     if (duplicate) {
-      alert('Esiste già un\'azione con lo stesso nome. Scegli un nome diverso.');
+      this.showMessage('Esiste gia un\'azione con lo stesso nome. Scegli un nome diverso.', 'OK', 7000);
       return;
     }
 
@@ -98,6 +104,7 @@ export class PropertiesPanel implements OnDestroy, OnChanges {
       label: newName,
       data: updatedData
     });
+    this.feedback.showToast('Parametri azione aggiornati con successo.', 2500);
   }
 
   private rebuildForm() {

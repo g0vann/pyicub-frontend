@@ -130,4 +130,15 @@
 
 .palette-wrapper {
     position: relative;
+    box-sizing: border-box;
+    padding-bottom: 12px;
+}
+
+.palette-wrapper mat-accordion {
+    display: block;
+    padding-bottom: 12px;
+}
+
+.palette-wrapper mat-expansion-panel:last-child {
+    margin-bottom: 8px;
 }

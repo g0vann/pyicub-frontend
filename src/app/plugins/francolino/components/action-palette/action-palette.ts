@@ -18,6 +18,7 @@ import { GraphStateService, EdgeType } from '../../services/graph-state';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { environment } from '../../../../../environments/environment';
 import { AppStateService } from '../../../../services/app-state.service';
+import { PluginFeedbackService } from '../../services/plugin-feedback.service';
 import { lastValueFrom } from 'rxjs';
 
 /**
@@ -40,6 +41,7 @@ export class ActionPalette {
   public graphState = inject(GraphStateService); // Public per il template
   private http = inject(HttpClient);
   private appState = inject(AppStateService);
+  private feedback = inject(PluginFeedbackService);
   @ViewChild('actionFileInput') actionFileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('paletteWrapper') paletteWrapper!: ElementRef<HTMLElement>;
   @ViewChild('contextMenu') contextMenuRef!: ElementRef<HTMLElement>;
@@ -47,6 +49,10 @@ export class ActionPalette {
   contextMenuAction: NodeAction | null = null;
   contextMenuX = 0;
   contextMenuY = 0;
+
+  private showMessage(message: string, _action = 'OK', _duration = 4000) {
+    this.feedback.show(message);
+  }
 
   /** @property {Observable<NodeAction[]>} nodeActions$ - Flusso di dati per le azioni dei nodi. */
   nodeActions$: Observable<NodeAction[]> = this.actionsService.nodeActions$;
@@ -152,7 +158,7 @@ export class ActionPalette {
         // Esegui validazione strutturale semplificata (Top-Level Strict)
         const validationErrors = this.validateActionStructure(parsed);
         if (validationErrors.length > 0) {
-          alert('Il file selezionato non è valido:\n\n- ' + validationErrors.join('\n- '));
+          this.showMessage('Il file selezionato non è valido: ' + validationErrors.join(' | '), 'OK', 7000);
           return;
         }
 
@@ -161,7 +167,12 @@ export class ActionPalette {
         const existingActions = this.actionsService.currentNodeActions;
 
         while (existingActions.some(a => a.name === actionName)) {
-            const userInput = prompt(`L'azione '${actionName}' è già presente nella palette.\n\nInserisci un nuovo nome per importarla (es. ${actionName}_v2), oppure premi Annulla per interrompere.`);
+            const userInput = await this.feedback.prompt(
+              `L'azione '${actionName}' è già presente nella palette.\n\nInserisci un nuovo nome per importarla (es. ${actionName}_v2), oppure premi Annulla per interrompere.`,
+              'Rinomina azione',
+              `${actionName}_v2`,
+              'Nuovo nome azione'
+            );
             
             if (userInput === null) {
                 // Utente ha premuto Annulla
@@ -182,13 +193,13 @@ export class ActionPalette {
 
         await lastValueFrom(this.http.post(url, parsed, { headers: { 'Content-Type': 'application/json' } }));
         await this.actionsService.loadNodeActionsFromServer(robotName, appName);
-        alert('Azione importata e salvata con successo.');
+        this.showMessage('Azione importata e salvata con successo.');
       } catch (err) {
         console.error('Errore importazione azione', err);
         if (err instanceof SyntaxError) {
-          alert('Errore: Il file non è un JSON valido.');
+          this.showMessage('Errore: il file non è un JSON valido.');
         } else {
-          alert('Errore durante il salvataggio dell\'azione sul server.');
+          this.showMessage('Errore durante il salvataggio dell\'azione sul server.', 'OK', 7000);
         }
       } finally {
         input.value = '';
@@ -246,9 +257,14 @@ export class ActionPalette {
   }
 
   async deleteAction(action: NodeAction) {
-    if (!action || action.name === 'Init') return;
+    if (!action) return;
+    if (action.name === 'Init') {
+      this.closeContextMenu();
+      this.showMessage("L'azione Init non puo essere eliminata dal server.");
+      return;
+    }
     this.closeContextMenu();
-    const confirmed = window.confirm(`Vuoi eliminare l'azione '${action.name}' dal server? Potrebbe essere usata da FSM salvate.`);
+    const confirmed = await this.feedback.confirm(`Vuoi eliminare l'azione '${action.name}' dal server? Potrebbe essere usata da FSM salvate.`);
     if (!confirmed) return;
 
     const robotName = this.appState.selectedRobot?.name || 'icubSim';
@@ -257,10 +273,10 @@ export class ActionPalette {
     try {
       await lastValueFrom(this.http.get(url));
       await this.actionsService.loadNodeActionsFromServer(robotName, appName);
-      alert(`Azione '${action.name}' eliminata con successo.`);
+      this.showMessage(`Azione '${action.name}' eliminata con successo.`);
     } catch (err) {
       console.error('Errore eliminazione azione', err);
-      alert('Errore durante l\'eliminazione dell\'azione. Verifica che non sia in uso o riprova.');
+      this.showMessage('Errore durante l\'eliminazione dell\'azione. Verifica che non sia in uso o riprova.', 'OK', 7000);
     }
   }
 

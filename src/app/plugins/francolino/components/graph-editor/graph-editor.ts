@@ -2,11 +2,11 @@ import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, Output, Eve
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subscription } from 'rxjs';
 import { Action } from '../../models/action';
 import { GraphStateService, EdgeType } from '../../services/graph-state';
 import { GraphService } from '../../services/graph.service';
+import { PluginFeedbackService } from '../../services/plugin-feedback.service';
 import cytoscape, { NodeSingular } from 'cytoscape';
 import cxtmenu from 'cytoscape-cxtmenu';
 
@@ -15,7 +15,7 @@ cytoscape.use(cxtmenu);
 @Component({
   selector: 'app-graph-editor',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule],
   templateUrl: './graph-editor.html',
   styleUrls: ['./graph-editor.scss']
 })
@@ -36,14 +36,15 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
 
   public graphState = inject(GraphStateService);
   private graphService = inject(GraphService);
-  private snackBar = inject(MatSnackBar);
+  private feedback = inject(PluginFeedbackService);
 
   @HostListener('window:keydown.delete', ['$event'])
   onDeleteKeyPress(event: Event) {
+    event.preventDefault();
     const selected = this.cy.elements(':selected');
     if (selected.length > 0) {
       const idsToRemove = selected.map(el => el.id());
-      this.graphService.removeElements(idsToRemove);
+      this.removeElementsAndClearSelection(idsToRemove);
     }
   }
 
@@ -54,6 +55,13 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     this.graphState.setEdgeType(null);
   }
 
+
+  private removeElementsAndClearSelection(idsToRemove: string[]) {
+    if (!idsToRemove || idsToRemove.length === 0) return;
+    // Keep Properties panel consistent when selected elements are deleted.
+    this.nodeSelect.emit(undefined);
+    this.graphService.removeElements(idsToRemove);
+  }
   ngAfterViewInit() {
     this.cy = cytoscape({
       container: this.cyContainer.nativeElement,
@@ -151,7 +159,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
           content: '<span class="material-icons">delete</span> Elimina',
           contentAsHTML: true,
           select: (ele: any) => {
-            this.graphService.removeElements([ele.id()]);
+            this.removeElementsAndClearSelection([ele.id()]);
           }
         }
       ]
@@ -355,10 +363,19 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     const y = (event.clientY - wrapperRect.top - pan.y) / zoom;
 
     let shape: string = action.name === 'Init' ? 'ellipse' : 'round-rectangle';
+    const existingNodes = this.graphService.getCurrentGraphData().nodes;
+
+    // Business rule: Init can be placed only once in the canvas.
+    if (action.name === 'Init') {
+      const hasInit = existingNodes.some(n => n.type === 'start' || n.label === 'Init');
+      if (hasInit) {
+        this.feedback.show('Init gia presente nel canvas.');
+        return;
+      }
+    }
 
     // Generazione Nome Univoco
     let uniqueName = action.name;
-    const existingNodes = this.graphService.getCurrentGraphData().nodes;
     
     // Controlla se il nome base esiste già
     const baseNameExists = existingNodes.some(n => n.label === uniqueName);
@@ -372,11 +389,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     }
 
     if (uniqueName !== action.name) {
-      this.snackBar.open(`Nome duplicato! Il nodo è stato rinominato in "${uniqueName}"`, 'OK', {
-        duration: 4000,
-        verticalPosition: 'top',
-        horizontalPosition: 'center'
-      });
+      this.feedback.showToast(`Nome duplicato: nodo rinominato in "${uniqueName}".`, 3500);
     }
 
     this.graphService.addNode({
@@ -391,3 +404,5 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
   zoomOut() { this.cy.zoom(this.cy.zoom() / 1.2); }
   fit() { this.cy.fit(); }
 }
+
+
