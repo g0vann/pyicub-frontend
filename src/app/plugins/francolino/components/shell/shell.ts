@@ -553,7 +553,7 @@ export class Shell implements OnInit, OnDestroy {
 
     // 1. Controllo grafo vuoto
     if (nodes.length === 0) {
-      return ['Il grafo è vuoto.'];
+      return ['Il grafo è vuoto.\n'];
     }
 
     // 2. Controllo esistenza Init
@@ -638,7 +638,7 @@ export class Shell implements OnInit, OnDestroy {
   private _performDownload() {
     const errors = this.validateGraph();
     if (errors.length > 0) {
-      this.showMessage('Impossibile esportare il grafo: ' + errors.join(' | '), 'OK', 7000);
+      this.showMessage('Impossibile esportare il grafo: ' + errors.join(' \n '), 'OK', 7000);
       return;
     }
     const { jsonString } = this._generateFsmJson({ clean: false });
@@ -677,7 +677,7 @@ export class Shell implements OnInit, OnDestroy {
   async saveFsm() {
     const errors = this.validateGraph();
     if (errors.length > 0) {
-      this.showMessage('Impossibile salvare il grafo: ' + errors.join(' | '), 'OK', 7000);
+      this.showMessage('Impossibile salvare il grafo: ' + errors.join(' \n '), 'OK', 7000);
       return;
     }
     // this._performDownload();
