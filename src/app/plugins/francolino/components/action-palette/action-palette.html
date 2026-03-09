@@ -2,7 +2,7 @@
 <mat-accordion multi>
     <mat-expansion-panel [expanded]="true">
         <mat-expansion-panel-header>
-            <mat-panel-title>Nodi</mat-panel-title>
+            <mat-panel-title>Actions</mat-panel-title>
         </mat-expansion-panel-header>
         <div class="palette-section">
             <mat-form-field appearance="outline" class="search-bar">
@@ -12,7 +12,7 @@
             </mat-form-field>
             <button mat-flat-button color="primary" class="import-button" (click)="triggerImportAction()">
               <mat-icon>file_upload</mat-icon>
-              <span>Importa</span>
+              <span>Import</span>
             </button>
             <input #actionFileInput type="file" accept="application/json" (change)="onActionFileSelected($event)" hidden />
             <!-- La griglia ora itera su un Observable usando la pipe async -->
@@ -29,7 +29,7 @@
     </mat-expansion-panel>
     <mat-expansion-panel [expanded]="true">
         <mat-expansion-panel-header>
-            <mat-panel-title>Archi</mat-panel-title>
+            <mat-panel-title>Transactions</mat-panel-title>
         </mat-expansion-panel-header>
         <div class="palette-list" *ngIf="edgeActions$ | async as edgeActions">
             <div *ngFor="let edge of edgeActions" class="palette-item edge-item" (click)="selectEdgeType(edge.type)"
@@ -41,6 +41,6 @@
     </mat-expansion-panel>
 </mat-accordion>
 <div *ngIf="contextMenuAction" #contextMenu class="context-menu" [style.top.px]="contextMenuY" [style.left.px]="contextMenuX" (click)="$event.stopPropagation()">
-  <button mat-button color="warn" (click)="handleDeleteFromMenu()">Elimina dal server</button>
+  <button mat-button color="warn" (click)="handleDeleteFromMenu()">Remove from backend</button>
 </div>
 </div>

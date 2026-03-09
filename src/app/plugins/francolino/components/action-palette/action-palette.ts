@@ -158,7 +158,7 @@ export class ActionPalette {
         // Esegui validazione strutturale semplificata (Top-Level Strict)
         const validationErrors = this.validateActionStructure(parsed);
         if (validationErrors.length > 0) {
-          this.showMessage('Il file selezionato non è valido: ' + validationErrors.join(' | '), 'OK', 7000);
+          this.showMessage('The selected file is not valid: ' + validationErrors.join(' | '), 'OK', 7000);
           return;
         }
 
@@ -168,10 +168,10 @@ export class ActionPalette {
 
         while (existingActions.some(a => a.name === actionName)) {
             const userInput = await this.feedback.prompt(
-              `L'azione '${actionName}' è già presente nella palette.\n\nInserisci un nuovo nome per importarla (es. ${actionName}_v2), oppure premi Annulla per interrompere.`,
-              'Rinomina azione',
+              `The action '${actionName}' is already present in the palette.\n\nEnter a new name to import it (e.g. ${actionName}_v2), or press Cancel to stop.`,
+              'Rename action',
               `${actionName}_v2`,
-              'Nuovo nome azione'
+              'New action name'
             );
             
             if (userInput === null) {
@@ -193,13 +193,13 @@ export class ActionPalette {
 
         await lastValueFrom(this.http.post(url, parsed, { headers: { 'Content-Type': 'application/json' } }));
         await this.actionsService.loadNodeActionsFromServer(robotName, appName);
-        this.showMessage('Azione importata e salvata con successo.');
+        this.showMessage('Action imported and saved successfully.');
       } catch (err) {
         console.error('Errore importazione azione', err);
         if (err instanceof SyntaxError) {
-          this.showMessage('Errore: il file non è un JSON valido.');
+          this.showMessage('Error: the file is not a valid JSON.');
         } else {
-          this.showMessage('Errore durante il salvataggio dell\'azione sul server.', 'OK', 7000);
+          this.showMessage('Error while saving the action on the server.', 'OK', 7000);
         }
       } finally {
         input.value = '';
@@ -219,38 +219,38 @@ export class ActionPalette {
 
     // 1. Controllo Tipo Oggetto (No Array, No Null)
     if (Array.isArray(data)) {
-      return ['Il file contiene una lista (array). È consentito importare una sola azione alla volta (singolo oggetto).'];
+      return ['The file contains a list (array). You can only import one action at a time (single object).'];
     }
     if (!data || typeof data !== 'object') {
-      return ['Il contenuto non è un oggetto JSON valido.'];
+      return ['The content is not a valid JSON object.'];
     }
 
     // 2. Controllo Campi Sconosciuti (Strict Schema)
     const keys = Object.keys(data);
     const unknownKeys = keys.filter(k => !allowedKeys.has(k));
     if (unknownKeys.length > 0) {
-      errors.push(`Rilevati campi non permessi: ${unknownKeys.join(', ')}. Le uniche chiavi ammesse sono: name, description, offset_ms, steps, wait_for_steps.`);
+      errors.push(`Detected disallowed fields: ${unknownKeys.join(', ')}. The only allowed keys are: name, description, offset_ms, steps, wait_for_steps.`);
     }
 
     // 3. Controllo Campi Obbligatori e Tipi
     if (typeof data.name !== 'string' || !data.name.trim()) {
-      errors.push('Il campo "name" è obbligatorio e deve essere una stringa.');
+      errors.push('The "name" field is mandatory and must be a string.');
     }
 
     if (data.description !== null && typeof data.description !== 'string') {
-      errors.push('Il campo "description" deve essere una stringa oppure null.');
+      errors.push('The "description" field must be a string or null.');
     }
 
     if (data.offset_ms !== null && typeof data.offset_ms !== 'number') {
-      errors.push('Il campo "offset_ms" deve essere un numero oppure null.');
+      errors.push('The "offset_ms" field must be a number or null.');
     }
 
     if (!Array.isArray(data.steps)) {
-      errors.push('Il campo "steps" è obbligatorio e deve essere un array.');
+      errors.push('The "steps" field is mandatory and must be an array.');
     }
 
     if (!Array.isArray(data.wait_for_steps)) {
-      errors.push('Il campo "wait_for_steps" è obbligatorio e deve essere un array.');
+      errors.push('The "wait_for_steps" field is mandatory and must be an array.');
     }
 
     return errors;
@@ -260,11 +260,11 @@ export class ActionPalette {
     if (!action) return;
     if (action.name === 'Init') {
       this.closeContextMenu();
-      this.showMessage("L'azione Init non puo essere eliminata dal server.");
+      this.showMessage("The Init action cannot be deleted from the server.");
       return;
     }
     this.closeContextMenu();
-    const confirmed = await this.feedback.confirm(`Vuoi eliminare l'azione '${action.name}' dal server? Potrebbe essere usata da FSM salvate.`);
+    const confirmed = await this.feedback.confirm(`Do you want to delete the action '${action.name}' from the server? It might be used by saved FSMs.`);
     if (!confirmed) return;
 
     const robotName = this.appState.selectedRobot?.name || 'icubSim';
@@ -273,10 +273,10 @@ export class ActionPalette {
     try {
       await lastValueFrom(this.http.get(url));
       await this.actionsService.loadNodeActionsFromServer(robotName, appName);
-      this.showMessage(`Azione '${action.name}' eliminata con successo.`);
+      this.showMessage(`Action '${action.name}' deleted successfully.`);
     } catch (err) {
       console.error('Errore eliminazione azione', err);
-      this.showMessage('Errore durante l\'eliminazione dell\'azione. Verifica che non sia in uso o riprova.', 'OK', 7000);
+      this.showMessage('Error during action deletion. Check if it is in use or try again.', 'OK', 7000);
     }
   }
 

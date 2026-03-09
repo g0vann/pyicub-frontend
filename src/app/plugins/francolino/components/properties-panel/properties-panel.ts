@@ -82,13 +82,13 @@ export class PropertiesPanel implements OnDestroy, OnChanges {
     if (!this.node) return;
     const newName = (this.formState.name || '').trim();
     if (!newName) {
-      this.showMessage('Il nome dell\'azione e obbligatorio.');
+      this.showMessage('Action name is mandatory.');
       return;
     }
     const duplicate = this.graphService.getCurrentGraphData().nodes
       .some(n => n.id !== this.node!.id && (n.label === newName || (n.data && n.data.name === newName)));
     if (duplicate) {
-      this.showMessage('Esiste gia un\'azione con lo stesso nome. Scegli un nome diverso.', 'OK', 7000);
+      this.showMessage('An action with the same name already exists. Choose a different name.', 'OK', 7000);
       return;
     }
 
@@ -104,7 +104,7 @@ export class PropertiesPanel implements OnDestroy, OnChanges {
       label: newName,
       data: updatedData
     });
-    this.feedback.showToast('Parametri azione aggiornati con successo.', 2500);
+    this.feedback.showToast('Action parameters updated successfully.', 2500);
   }
 
   private rebuildForm() {

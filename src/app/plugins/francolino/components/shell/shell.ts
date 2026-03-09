@@ -70,7 +70,7 @@ export class Shell implements OnInit, OnDestroy {
   @HostBinding('style.--left')  leftCss  = '280px';
   @HostBinding('style.--right') rightCss = '320px';
 
-  fileName = 'Grafo.json';
+  fileName = 'Graph.json';
   renaming = false;
   q = '';
   searchError = '';
@@ -175,8 +175,8 @@ export class Shell implements OnInit, OnDestroy {
   async triggerImportJson() {
     if (!this.isCanvasEmpty()) {
       const confirmed = await this.feedback.confirm(
-        'Il canvas non e vuoto. Importando un nuovo JSON il contenuto attuale verra sostituito. Continuare?',
-        'Conferma import'
+        'The canvas is not empty. Importing a new JSON will replace the current content. Continue?',
+        'Confirm import'
       );
       if (!confirmed) return;
     }
@@ -253,8 +253,8 @@ export class Shell implements OnInit, OnDestroy {
         if (graphData) {
           console.log('Loading graph data into service...');
           this.graphService.loadGraph(graphData);
-          this.fileName = file.name || 'Grafo.json';
-          this.showToast('Import JSON completato con successo.');
+          this.fileName = file.name || 'Graph.json';
+          this.showToast('JSON import completed successfully.');
         }
 
       } catch (e) {
@@ -553,13 +553,13 @@ export class Shell implements OnInit, OnDestroy {
 
     // 1. Controllo grafo vuoto
     if (nodes.length === 0) {
-      return ['Il grafo è vuoto.\n'];
+      return ['The graph is empty.\n'];
     }
 
     // 2. Controllo esistenza Init
     const initNode = nodes.find(n => n.type === 'start');
     if (!initNode) {
-      return ['Manca il nodo "Init". È obbligatorio per definire l\'inizio e la fine del ciclo.'];
+      return ['Missing "Init" node. It is mandatory to define the start and end of the cycle.'];
     }
 
     // 3. Controllo specifico Init: Esattamente 1 IN e 1 OUT
@@ -567,10 +567,10 @@ export class Shell implements OnInit, OnDestroy {
     const initOutCount = edges.filter(e => e.source === initNode.id).length;
 
     if (initInCount !== 1) {
-      errors.push(`Il nodo "Init" deve avere ESATTAMENTE un arco in entrata (ne ha ${initInCount}). Il grafo deve chiudersi univocamente su Init.`);
+      errors.push(`The "Init" node must have EXACTLY one incoming edge (has ${initInCount}). The graph must close uniquely on Init.`);
     }
     if (initOutCount !== 1) {
-      errors.push(`Il nodo "Init" deve avere ESATTAMENTE un arco in uscita (ne ha ${initOutCount}).`);
+      errors.push(`The "Init" node must have EXACTLY one outgoing edge (has ${initOutCount}).`);
     }
 
     // --- Ora bisogna verificare la raggiungibilità e la chiusura del grafo, ovvero che INIT sia il primo e ultimo nodo e che non ci siano diramazioni del grafo che non terminano in INIT ---
@@ -623,11 +623,11 @@ export class Shell implements OnInit, OnDestroy {
       // A. Nodo Isola (non raggiungibile da Init)
       if (!reachableFromInit.has(node.id)) {
         // Init è sempre raggiungibile da sé stesso, quindi questo colpisce gli altri
-        errors.push(`Il nodo "${node.label}" non è collegato al flusso principale (non raggiungibile da Init).`);
+        errors.push(`The node "${node.label}" is not connected to the main flow (not reachable from Init).`);
       } else {
         // B. Vicolo cieco o Loop infinito (raggiungibile DA Init, ma non può tornare A Init)
         if (!canReachInit.has(node.id)) {
-           errors.push(`Il nodo "${node.label}" rompe il ciclo: è possibile raggiungerlo, ma da lì non si può tornare a Init.`);
+           errors.push(`The node "${node.label}" breaks the cycle: it is reachable, but you cannot return to Init from there.`);
         }
       }
     });
@@ -638,7 +638,7 @@ export class Shell implements OnInit, OnDestroy {
   private _performDownload() {
     const errors = this.validateGraph();
     if (errors.length > 0) {
-      this.showMessage('Impossibile esportare il grafo: ' + errors.join(' \n '), 'OK', 7000);
+      this.showMessage('Cannot export graph: ' + errors.join(' \n '), 'OK', 7000);
       return;
     }
     const { jsonString } = this._generateFsmJson({ clean: false });
@@ -646,12 +646,12 @@ export class Shell implements OnInit, OnDestroy {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = this.fileName || 'Grafo.json';
+    a.download = this.fileName || 'Graph.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-    this.showToast('Download JSON completato con successo.');
+    this.showToast('JSON download completed successfully.');
   }
 
   downloadFsm() {
@@ -660,24 +660,24 @@ export class Shell implements OnInit, OnDestroy {
 
   async clearCanvas() {
     const confirmed = await this.feedback.confirm(
-      'Vuoi azzerare il canvas? Tutti i nodi e le transizioni verranno rimossi.',
-      'Azzera canvas'
+      'Do you want to clear the canvas? All nodes and transitions will be removed.',
+      'Clear canvas'
     );
     if (!confirmed) return;
 
     this.graphService.clearGraph();
-    this.fileName = 'Grafo.json';
+    this.fileName = 'Graph.json';
     this.selectedNode = undefined;
     this.q = '';
     this.searchError = '';
     this.graphState.setEdgeType(null);
-    this.showToast('Canvas azzerato con successo.');
+    this.showToast('Canvas cleared successfully.');
   }
 
   async saveFsm() {
     const errors = this.validateGraph();
     if (errors.length > 0) {
-      this.showMessage('Impossibile salvare il grafo: ' + errors.join(' \n '), 'OK', 7000);
+      this.showMessage('Cannot save graph: ' + errors.join(' \n '), 'OK', 7000);
       return;
     }
     // this._performDownload();
@@ -701,10 +701,10 @@ export class Shell implements OnInit, OnDestroy {
       );
       await new Promise(resolve => setTimeout(resolve, 500));
       this.appStateService.triggerFsmPluginReload();
-      this.showToast('FSM salvato sul backend con successo.');
+      this.showToast('FSM saved to backend successfully.');
     } catch (e) {
       console.error('Error sending FSM to backend', e);
-      this.showMessage('Errore nell\'invio della FSM al backend. Il file e stato comunque scaricato localmente.', 'OK', 7000);
+      this.showMessage('Error sending FSM to backend. The file was downloaded locally instead.', 'OK', 7000);
     }
   }
 
@@ -725,8 +725,8 @@ export class Shell implements OnInit, OnDestroy {
   async loadFsmFromServer() {
     if (!this.isCanvasEmpty()) {
       const confirmed = await this.feedback.confirm(
-        'Il canvas non e vuoto. Ricaricando lo stato dal robot il contenuto attuale verra sostituito. Continuare?',
-        'Conferma ricarica'
+        'The canvas is not empty. Reloading state from robot will replace the current content. Continue?',
+        'Confirm reload'
       );
       if (!confirmed) return;
     }
@@ -746,7 +746,7 @@ export class Shell implements OnInit, OnDestroy {
           this.graphService.loadGraph(graphData);
           this.fileName = fsmData.name ? `${fsmData.name}.json` : 'fsm_from_server.json';
           console.log('Successfully loaded FSM from server.');
-          this.showToast('Stato ricaricato dal robot con successo.');
+          this.showToast('State reloaded from robot successfully.');
         }
       } else {
         this.showMessage('Error: Received empty FSM data from the server.');

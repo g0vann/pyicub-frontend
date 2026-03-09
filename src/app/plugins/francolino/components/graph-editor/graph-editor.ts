@@ -156,7 +156,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
       selector: 'node, edge',
       commands: [
         {
-          content: '<span class="material-icons">delete</span> Elimina',
+          content: '<span class="material-icons">delete</span> Delete',
           contentAsHTML: true,
           select: (ele: any) => {
             this.removeElementsAndClearSelection([ele.id()]);
@@ -369,7 +369,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     if (action.name === 'Init') {
       const hasInit = existingNodes.some(n => n.type === 'start' || n.label === 'Init');
       if (hasInit) {
-        this.feedback.show('Init gia presente nel canvas.');
+        this.feedback.show('Init already present on the canvas.');
         return;
       }
     }
@@ -389,7 +389,7 @@ export class GraphEditor implements AfterViewInit, OnDestroy {
     }
 
     if (uniqueName !== action.name) {
-      this.feedback.showToast(`Nome duplicato: nodo rinominato in "${uniqueName}".`, 3500);
+      this.feedback.showToast(`Duplicate name: node renamed to "${uniqueName}".`, 3500);
     }
 
     this.graphService.addNode({

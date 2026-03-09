@@ -1,41 +1,41 @@
 <mat-toolbar class="secondary-toolbar">
-    <!-- Azioni sinistra -->
+    <!-- Left Actions -->
     <div class="cluster">
-        <!-- GRUPPO 1: Azioni Server (Principali) -->
-        <button mat-icon-button aria-label="Salva sul Robot" (click)="saveFsm()" matTooltip="Salva sul Robot (Ctrl+S)" [disabled]="isGraphEmpty$ | async">
+        <!-- GROUP 1: Server Actions (Main) -->
+        <button mat-icon-button aria-label="Save to Robot" (click)="saveFsm()" matTooltip="Save to Robot (Ctrl+S)" [disabled]="isGraphEmpty$ | async">
             <mat-icon>save</mat-icon>
         </button>
 
-        <button mat-icon-button aria-label="Ricarica dal Robot" (click)="loadFsmFromServer()" matTooltip="Ricarica stato dal Robot">
+        <button mat-icon-button aria-label="Reload from Robot" (click)="loadFsmFromServer()" matTooltip="Reload state from Robot">
             <mat-icon>cloud_download</mat-icon>
         </button>
 
         <span class="v-divider" aria-hidden="true"></span>
 
-        <!-- GRUPPO 2: Azioni File Locale -->
-        <button mat-icon-button aria-label="Esporta JSON" (click)="downloadFsm()" matTooltip="Esporta file JSON" [disabled]="isGraphEmpty$ | async">
+        <!-- GROUP 2: Local File Actions -->
+        <button mat-icon-button aria-label="Export JSON" (click)="downloadFsm()" matTooltip="Export JSON file" [disabled]="isGraphEmpty$ | async">
             <mat-icon>file_download</mat-icon>
         </button>
 
-        <button mat-icon-button aria-label="Importa JSON" (click)="triggerImportJson()" matTooltip="Importa file JSON">
+        <button mat-icon-button aria-label="Import JSON" (click)="triggerImportJson()" matTooltip="Import JSON file">
             <mat-icon>file_upload</mat-icon>
         </button>
         <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".json">
 
-        <button mat-icon-button aria-label="Azzera canvas" (click)="clearCanvas()" matTooltip="Azzera canvas" [disabled]="isGraphEmpty$ | async">
+        <button mat-icon-button aria-label="Clear canvas" (click)="clearCanvas()" matTooltip="Clear canvas" [disabled]="isGraphEmpty$ | async">
             <mat-icon>delete_sweep</mat-icon>
         </button>
 
         <span class="v-divider" aria-hidden="true"></span>
 
-        <span matTooltip="Annulla (Ctrl+Z)">
-            <button mat-icon-button aria-label="Annulla" (click)="graphService.undo()"
+        <span matTooltip="Undo (Ctrl+Z)">
+            <button mat-icon-button aria-label="Undo" (click)="graphService.undo()"
                 [disabled]="!(graphService.canUndo$ | async)">
                 <mat-icon>undo</mat-icon>
             </button>
         </span>
-        <span matTooltip="Ripristina (Ctrl+Y)">
-            <button mat-icon-button aria-label="Ripristina" (click)="graphService.redo()"
+        <span matTooltip="Redo (Ctrl+Y)">
+            <button mat-icon-button aria-label="Redo" (click)="graphService.redo()"
                 [disabled]="!(graphService.canRedo$ | async)">
                 <mat-icon>redo</mat-icon>
             </button>
@@ -44,17 +44,17 @@
 
     <span class="spacer"></span>
 
-    <!-- Nome file al centro -->
+    <!-- Filename in the center -->
     <div class="filename" (dblclick)="startRename()" [attr.title]="fileName">
         <mat-icon>description</mat-icon>
         <input *ngIf="renaming" [(ngModel)]="fileName" (blur)="stopRename()" (keydown.enter)="stopRename()"
-            aria-label="Nome file" />
+            aria-label="Filename" />
         <span *ngIf="!renaming">{{ fileName }}</span>
     </div>
 
     <span class="spacer"></span>
 
-    <!-- Searchbar custom: 36px, centrata dentro la toolbar -->
+    <!-- Custom Searchbar -->
     <div class="cluster" style="position: relative;">
         <div class="searchbar" [class.has-error]="searchError">
             <mat-icon>search</mat-icon>
@@ -63,7 +63,7 @@
                 [(ngModel)]="q"
                 (keydown.enter)="onSearch(q)"
                 (input)="searchError = ''"
-                placeholder="Cerca"
+                placeholder="Search"
                 [matAutocomplete]="nodeAuto"
             />
             <mat-autocomplete #nodeAuto="matAutocomplete" (optionSelected)="onSuggestionSelected($event.option.value)">
@@ -71,7 +71,7 @@
                     {{ name }}
                 </mat-option>
             </mat-autocomplete>
-            <button *ngIf="q" class="icon-btn" aria-label="Pulisci" (click)="q = ''; searchError = ''">
+            <button *ngIf="q" class="icon-btn" aria-label="Clear" (click)="q = ''; searchError = ''">
                 <mat-icon>close</mat-icon>
             </button>
         </div>
@@ -79,7 +79,7 @@
     </div>
 </mat-toolbar>
 
-<!-- GRID a 5 colonne: [sx] [gutter] [centro] [gutter] [dx] -->
+<!-- GRID with 5 columns: [left] [gutter] [center] [gutter] [right] -->
 <div class="wrap">
     <div class="grid">
         <aside class="panel left">
@@ -88,7 +88,7 @@
             </div>
         </aside>
 
-        <div class="gutter" (mousedown)="startDrag('left', $event)" matTooltip="Ridimensiona"
+        <div class="gutter" (mousedown)="startDrag('left', $event)" matTooltip="Resize"
             matTooltipPosition="right"></div>
 
         <main class="panel center">
@@ -98,7 +98,7 @@
             </div>
         </main>
 
-        <div class="gutter" (mousedown)="startDrag('right', $event)" matTooltip="Ridimensiona"
+        <div class="gutter" (mousedown)="startDrag('right', $event)" matTooltip="Resize"
             matTooltipPosition="left"></div>
 
         <aside class="panel right" style="background: transparent; border: none; box-shadow: none;">
@@ -127,8 +127,8 @@
             <button mat-raised-button color="primary" (click)="feedback.clear()">OK</button>
         </div>
         <div class="actions" *ngIf="msg.mode === 'confirm'">
-            <button mat-stroked-button (click)="feedback.resolveConfirm(false)">{{ msg.cancelLabel || 'Annulla' }}</button>
-            <button mat-raised-button color="primary" (click)="feedback.resolveConfirm(true)">{{ msg.confirmLabel || 'Conferma' }}</button>
+            <button mat-stroked-button (click)="feedback.resolveConfirm(false)">{{ msg.cancelLabel || 'Cancel' }}</button>
+            <button mat-raised-button color="primary" (click)="feedback.resolveConfirm(true)">{{ msg.confirmLabel || 'Confirm' }}</button>
         </div>
         <div class="prompt-input" *ngIf="msg.mode === 'prompt'">
             <input
@@ -140,8 +140,8 @@
             />
         </div>
         <div class="actions" *ngIf="msg.mode === 'prompt'">
-            <button mat-stroked-button (click)="onPromptCancel()">{{ msg.cancelLabel || 'Annulla' }}</button>
-            <button mat-raised-button color="primary" (click)="onPromptConfirm()">{{ msg.confirmLabel || 'Conferma' }}</button>
+            <button mat-stroked-button (click)="onPromptCancel()">{{ msg.cancelLabel || 'Cancel' }}</button>
+            <button mat-raised-button color="primary" (click)="onPromptConfirm()">{{ msg.confirmLabel || 'Confirm' }}</button>
         </div>
     </div>
 </div>

@@ -88,7 +88,7 @@ describe('Shell', () => {
 
     // Verify success feedback and backend invocation
     expect(feedbackSpy).toHaveBeenCalled();
-    expect(feedbackSpy.calls.mostRecent().args[0]).toContain('salvato');
+    expect(feedbackSpy.calls.mostRecent().args[0]).toContain('saved');
     expect(postSpy).toHaveBeenCalled();
     expect(mockAppState.triggerFsmPluginReload).toHaveBeenCalled();
   });

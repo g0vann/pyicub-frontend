@@ -100,7 +100,7 @@ export class TreeViewPanel implements OnInit, OnDestroy {
         // Fallback: if no init, just list all as orphans
         return [{
             id: 'orphans',
-            label: 'Nodi Isolati / Non Connessi',
+            label: 'Isolated / Unconnected Nodes',
             type: 'folder',
             children: nodes.map(n => ({ id: n.id, label: n.label, type: 'action' }))
         }];
@@ -140,7 +140,7 @@ export class TreeViewPanel implements OnInit, OnDestroy {
                 const childNode = nodes.find(n => n.id === childId);
                 childrenNodes.push({
                     id: childId,
-                    label: `Torna a: ${childNode?.label || 'Unknown'}`,
+                    label: `Back to: ${childNode?.label || 'Unknown'}`,
                     type: 'ref'
                 });
             } else {
@@ -171,7 +171,7 @@ export class TreeViewPanel implements OnInit, OnDestroy {
     if (orphans.length > 0) {
         result.push({
             id: 'orphans-folder',
-            label: '⚠️ Nodi non raggiungibili',
+            label: '⚠️ Unreachable Nodes',
             type: 'folder',
             children: orphans.map(n => ({ id: n.id, label: n.label, type: 'action' }))
         });

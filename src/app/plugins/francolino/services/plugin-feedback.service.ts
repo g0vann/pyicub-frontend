@@ -21,7 +21,7 @@ export class PluginFeedbackService {
   private confirmResolver: ((value: boolean) => void) | null = null;
   private promptResolver: ((value: string | null) => void) | null = null;
 
-  show(text: string, title = 'Messaggio') {
+  show(text: string, title = 'Message') {
     this.messageSource.next({ mode: 'alert', title, text });
   }
 
@@ -59,9 +59,9 @@ export class PluginFeedbackService {
 
   confirm(
     text: string,
-    title = 'Conferma',
-    confirmLabel = 'Conferma',
-    cancelLabel = 'Annulla'
+    title = 'Confirm',
+    confirmLabel = 'Confirm',
+    cancelLabel = 'Cancel'
   ): Promise<boolean> {
     if (this.confirmResolver) {
       this.confirmResolver(false);
@@ -91,11 +91,11 @@ export class PluginFeedbackService {
 
   prompt(
     text: string,
-    title = 'Inserisci un valore',
+    title = 'Enter a value',
     defaultValue = '',
     placeholder = '',
-    confirmLabel = 'Conferma',
-    cancelLabel = 'Annulla'
+    confirmLabel = 'Confirm',
+    cancelLabel = 'Cancel'
   ): Promise<string | null> {
     if (this.confirmResolver) {
       this.confirmResolver(false);

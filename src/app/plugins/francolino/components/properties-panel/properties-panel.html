@@ -7,14 +7,14 @@
       <div class="property-list" *ngIf="node.data">
         <div class="property-item">
           <mat-form-field appearance="outline">
-            <mat-label>Nome</mat-label>
+            <mat-label>Name</mat-label>
             <input matInput [ngModel]="formState.name" (ngModelChange)="onFieldChange('name', $event)" />
           </mat-form-field>
         </div>
 
         <div class="property-item">
           <mat-form-field appearance="outline">
-            <mat-label>Descrizione</mat-label>
+            <mat-label>Description</mat-label>
             <input matInput [ngModel]="formState.description" (ngModelChange)="onFieldChange('description', $event)" />
           </mat-form-field>
         </div>
@@ -39,7 +39,7 @@
         </div>
 
         <div class="property-item">
-          <button mat-flat-button color="primary" (click)="save()">Salva</button>
+          <button mat-flat-button color="primary" (click)="save()">Save</button>
         </div>
 
       </div>
@@ -48,5 +48,5 @@
 </div>
 
 <ng-template #emptyState>
-  <p>Nessun nodo selezionato.</p>
+  <p>No node selected.</p>
 </ng-template>
